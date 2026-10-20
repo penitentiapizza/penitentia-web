@@ -185,6 +185,12 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .pizza__agregar:hover { background: var(--azul-medio); }
 .pizza__agregar:active { transform: scale(.95); }
+.pizza__consultar { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.pizza__precio--consultar { font-size: var(--t-cuerpo); color: var(--azul-70); }
+/* Sin foto: bloque azul con la firma, como la etiqueta del freezer */
+.pizza__foto--etiqueta { display: grid; place-items: center; background: var(--azul); }
+.pizza__foto--etiqueta .pizza__marca { position: static; width: 64%; height: auto; object-fit: contain; }
+@media (hover: hover) { .pizza:hover .pizza__foto--etiqueta .pizza__marca { transform: none; } }
 .pizza__agregar:disabled { background: var(--azul-12); color: var(--azul-55); cursor: not-allowed; }
 .pizza__agregar.listo { background: var(--azul-medio); }
 
@@ -380,8 +386,8 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 @media (max-width: 600px) {
   :root { --barra-alto: 64px; }
-  .pizza__precio { flex-basis: auto; margin-right: auto; }
-  .pizza__agregar { flex: 0 0 auto; }
+  .pizza__pie { gap: 10px; }
+  .pizza__agregar { flex: 1 1 auto; }
   body { font-size: 16px; }
   .barra__logo img { height: 40px; }
   .btn-carrito span:not(.contador) { display: none; }

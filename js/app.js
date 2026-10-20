@@ -13,6 +13,8 @@
   var formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
   var pesos = function (n) { return formatoPesos.format(n).replace(/ /g, " "); };
   var porId = function (id) { return PRODUCTOS.filter(function (p) { return p.id === id; })[0]; };
+  // Se puede sumar al carrito si hay stock y tiene precio; sin precio se consulta por WhatsApp
+  var vendible = function (p) { return p.disponible !== false && typeof p.precio === "number" && p.precio > 0; };
 
   /* ---------- Estado del pedido (se guarda en este navegador) ---------- */
   var pedido = leer();
@@ -23,7 +25,7 @@
       var limpio = {};
       Object.keys(datos).forEach(function (id) {
         var p = porId(id);
-        if (p && p.disponible !== false && datos[id] > 0) limpio[id] = Math.min(99, Math.floor(datos[id]));
+        if (p && vendible(p) && datos[id] > 0) limpio[id] = Math.min(99, Math.floor(datos[id]));
       });
       return limpio;
     } catch (e) { return {}; }
@@ -45,7 +47,7 @@
   }
 
   /* Fotos: si hay versión -480 de una -800.webp, los celulares bajan la chica */
-  function chica(foto) { return /-800\.webp$/.test(foto) ? foto.replace(/-800\.webp$/, "-480.webp") : foto; }
+  function chica(foto) { if (!foto) return "img/favicon.svg"; return /-800\.webp$/.test(foto) ? foto.replace(/-800\.webp$/, "-480.webp") : foto; }
   function fuente(foto) {
     if (!/-800\.webp$/.test(foto)) return 'src="' + foto + '"';
     return 'src="' + foto + '" srcset="' + chica(foto) + ' 480w, ' + foto + ' 800w" sizes="(max-width: 600px) 100vw, (max-width: 1080px) 40vw, 22vw"';
@@ -58,18 +60,19 @@
   function pintarCatalogo() {
     grilla.innerHTML = PRODUCTOS.map(function (p) {
       var hay = p.disponible !== false;
+      var conPrecio = vendible(p) || (!hay && typeof p.precio === "number");
       seleccion[p.id] = seleccion[p.id] || 1;
-      return (
-        '<article class="pizza" data-id="' + p.id + '" data-entra>' +
-          '<div class="pizza__foto">' +
-            '<img ' + fuente(p.foto) + ' alt="Pizza ' + p.nombre + '" loading="lazy" decoding="async" width="800" height="470">' +
-            '<span class="pizza__sello">' + (hay ? "Congelada" : "Sin stock") + '</span>' +
-          '</div>' +
-          '<div class="pizza__cuerpo">' +
-            '<h3 class="pizza__nombre">' + p.nombre + '</h3>' +
-            '<p class="pizza__desc">' + p.descripcion + '</p>' +
-            '<div class="pizza__pie">' +
-              '<p class="pizza__precio">' + pesos(p.precio) + '</p>' +
+      // Sin foto: la etiqueta azul de Penitentia, como la del freezer
+      var foto = p.foto
+        ? '<img ' + fuente(p.foto) + ' alt="Pizza ' + p.nombre + '" loading="lazy" decoding="async" width="800" height="470">'
+        : '<img class="pizza__marca" src="img/logo-blanco.svg" alt="" width="700" height="289" loading="lazy">';
+      var pie;
+      if (hay && !conPrecio) {
+        pie = '<p class="pizza__precio pizza__precio--consultar">Consultá el precio</p>' +
+              '<a class="pizza__agregar pizza__consultar" target="_blank" rel="noopener" href="' +
+                enlaceWa("¡Hola Penitentia! Quería consultar el precio de la pizza " + p.nombre + ".") + '">Consultar</a>';
+      } else {
+        pie = '<p class="pizza__precio">' + pesos(p.precio) + '</p>' +
               '<div class="cantidad" role="group" aria-label="Cantidad de ' + p.nombre + '">' +
                 '<button type="button" data-menos aria-label="Una menos"' + (hay ? "" : " disabled") + '>−</button>' +
                 '<output data-sel>' + seleccion[p.id] + '</output>' +
@@ -77,8 +80,17 @@
               '</div>' +
               '<button type="button" class="pizza__agregar" data-agregar' + (hay ? "" : " disabled") + '>' +
                 (hay ? "Agregar" : "Sin stock") +
-              '</button>' +
-            '</div>' +
+              '</button>';
+      }
+      return (
+        '<article class="pizza" data-id="' + p.id + '" data-entra>' +
+          '<div class="pizza__foto' + (p.foto ? "" : " pizza__foto--etiqueta") + '">' + foto +
+            '<span class="pizza__sello">' + (hay ? "Congelada" : "Sin stock") + '</span>' +
+          '</div>' +
+          '<div class="pizza__cuerpo">' +
+            '<h3 class="pizza__nombre">' + p.nombre + '</h3>' +
+            '<p class="pizza__desc">' + p.descripcion + '</p>' +
+            '<div class="pizza__pie">' + pie + '</div>' +
           '</div>' +
         '</article>'
       );
@@ -90,6 +102,7 @@
     if (!tarjeta) return;
     var id = tarjeta.getAttribute("data-id");
     var salida = $("[data-sel]", tarjeta);
+    if (!salida) return; // pizzas para consultar: el enlace abre WhatsApp solo
     if (ev.target.closest("[data-mas]")) seleccion[id] = Math.min(20, seleccion[id] + 1);
     else if (ev.target.closest("[data-menos]")) seleccion[id] = Math.max(1, seleccion[id] - 1);
     else if (ev.target.closest("[data-agregar]")) {
