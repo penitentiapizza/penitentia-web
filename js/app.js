@@ -48,17 +48,16 @@
       var hay = p.disponible !== false;
       seleccion[p.id] = seleccion[p.id] || 1;
       return (
-        '<article class="pizza" data-id="' + p.id + '">' +
+        '<article class="pizza" data-id="' + p.id + '" data-entra>' +
           '<div class="pizza__foto">' +
             '<img src="' + p.foto + '" alt="Pizza ' + p.nombre + '" loading="lazy" width="800" height="470">' +
-            '<span class="pizza__sello">' + (hay ? "CONGELADA" : "SIN STOCK") + '</span>' +
+            '<span class="pizza__sello">' + (hay ? "Congelada" : "Sin stock") + '</span>' +
           '</div>' +
           '<div class="pizza__cuerpo">' +
             '<h3 class="pizza__nombre">' + p.nombre + '</h3>' +
-            '<p class="pizza__rotulo">PROPUESTA DE SABOR</p>' +
             '<p class="pizza__desc">' + p.descripcion + '</p>' +
-            '<p class="pizza__precio">' + pesos(p.precio) + '</p>' +
             '<div class="pizza__pie">' +
+              '<p class="pizza__precio">' + pesos(p.precio) + '</p>' +
               '<div class="cantidad" role="group" aria-label="Cantidad de ' + p.nombre + '">' +
                 '<button type="button" data-menos aria-label="Una menos"' + (hay ? "" : " disabled") + '>−</button>' +
                 '<output data-sel>' + seleccion[p.id] + '</output>' +
@@ -83,12 +82,20 @@
     else if (ev.target.closest("[data-menos]")) seleccion[id] = Math.max(1, seleccion[id] - 1);
     else if (ev.target.closest("[data-agregar]")) {
       cambiar(id, (pedido[id] || 0) + seleccion[id]);
+      confirmarBoton(ev.target.closest("[data-agregar]"));
       avisar(seleccion[id] + " × " + porId(id).nombre + " al pedido");
       seleccion[id] = 1;
       saltarContador();
     }
     salida.textContent = seleccion[id];
   });
+
+  function confirmarBoton(boton) {
+    boton.textContent = "Sumada";
+    boton.classList.add("listo");
+    clearTimeout(boton._t);
+    boton._t = setTimeout(function () { boton.textContent = "Agregar"; boton.classList.remove("listo"); }, 1400);
+  }
 
   /* ---------- Carrito ---------- */
   var carrito = $("#carrito");
@@ -252,6 +259,57 @@
   var barra = $("#barra");
   window.addEventListener("scroll", function () { barra.classList.toggle("con-sombra", window.scrollY > 8); }, { passive: true });
 
+  /* Precio "desde" en la portada */
+  var precios = PRODUCTOS.filter(function (p) { return p.disponible !== false; }).map(function (p) { return p.precio; });
+  if (precios.length) $$("[data-desde]").forEach(function (el) { el.textContent = pesos(Math.min.apply(null, precios)); });
+
   pintarCatalogo();
   pintarTodo();
+  // Se mide después de la carga, cuando el navegador ya saltó a un #enlace
+  if (document.readyState === "complete") requestAnimationFrame(prepararEntradas);
+  else window.addEventListener("load", function () { requestAnimationFrame(prepararEntradas); });
+  prepararVideo();
+
+  /* ---------- Movimiento: entradas por sección ---------- */
+  function prepararEntradas() {
+    var quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (quieto || !("IntersectionObserver" in window)) return;
+    if (location.hash && location.hash !== "#inicio") return; // llegó a una sección: mostrar todo de una
+    var piezas = $$("[data-entra]").filter(function (el) { return el.getBoundingClientRect().top > window.innerHeight * .92; });
+    // Escalonado dentro de cada grupo (encabezado, texto, fotos, filas)
+    var grupos = new Map();
+    piezas.forEach(function (el) {
+      var padre = el.parentElement;
+      var i = grupos.get(padre) || 0;
+      el.style.setProperty("--retraso", Math.min(i, 5) * 80 + "ms");
+      grupos.set(padre, i + 1);
+      el.classList.add("espera");
+    });
+    var io = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) { if (e.isIntersecting) mostrar(e.target); });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: .12 });
+    piezas.forEach(function (el) { io.observe(el); });
+    function mostrar(el) { el.classList.remove("espera"); io.unobserve(el); }
+    // Red de seguridad: además del observador, revisar al hacer scroll para que nada quede oculto
+    var pendiente = false;
+    function revisar() {
+      pendiente = false;
+      var limite = window.innerHeight * .95;
+      $$(".espera").forEach(function (el) { if (el.getBoundingClientRect().top < limite) mostrar(el); });
+      if (!$(".espera")) window.removeEventListener("scroll", alScroll);
+    }
+    function alScroll() { if (!pendiente) { pendiente = true; requestAnimationFrame(revisar); setTimeout(revisar, 200); } }
+    window.addEventListener("scroll", alScroll, { passive: true });
+  }
+
+  /* El video del horno solo corre cuando se ve, y nunca con movimiento reducido */
+  function prepararVideo() {
+    var v = $(".preparacion__video video");
+    if (!v) return;
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { v.removeAttribute("autoplay"); v.pause(); return; }
+    if (!("IntersectionObserver" in window)) return;
+    new IntersectionObserver(function (e) {
+      if (e[0].isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause();
+    }).observe(v);
+  }
 })();

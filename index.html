@@ -20,6 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
 
@@ -29,7 +30,7 @@
   <header class="barra" id="barra">
     <div class="barra__in">
       <a href="#inicio" class="barra__logo" aria-label="Penitentia Pizza, volver al inicio">
-        <img src="img/logo-blanco.svg" alt="Penitentia Pizza" width="150" height="62">
+        <img src="img/logo-blanco.svg" alt="Penitentia Pizza" width="117" height="48">
       </a>
       <nav class="barra__nav" aria-label="Principal">
         <a href="#catalogo">Catálogo</a>
@@ -48,16 +49,15 @@
     <!-- PORTADA -->
     <section class="portada" id="inicio">
       <div class="portada__texto">
-        <p class="etiqueta">PIZZA CONGELADA A LA PIEDRA</p>
         <h1 class="portada__firma">
-          <img src="img/firma-blanco.svg" alt="Penitentia">
+          <img src="img/firma-blanco.svg" alt="Penitentia" width="683" height="205">
           <span>PIZZA</span>
         </h1>
-        <p class="portada__frase">Tu próxima tentación empieza acá...</p>
-        <p class="portada__bajada">Masa casera con prefermento, armada a mano y congelada para que la cocines en tu horno. Elegí tus sabores y mandanos el pedido por WhatsApp.</p>
+        <p class="portada__frase">Pizzas congeladas a la piedra, listas para tu horno.</p>
+        <p class="portada__bajada">Masa casera con prefermento, armada a mano y congelada. Elegí tus sabores y mandanos el pedido por WhatsApp.</p>
         <div class="portada__acciones">
-          <a class="btn btn--blanco" href="#catalogo">Ver catálogo</a>
-          <a class="btn btn--linea" data-wa href="#">Escribinos por WhatsApp</a>
+          <a class="btn btn--blanco" href="#catalogo">Armá tu pedido</a>
+          <p class="portada__desde">Desde <strong data-desde>$ 7.790</strong></p>
         </div>
       </div>
       <figure class="portada__foto">
@@ -65,12 +65,11 @@
       </figure>
     </section>
 
-    <!-- CATÁLOGO -->
+    <!-- CATÁLOGO: cada pizza se presenta como su etiqueta de freezer (cuaderno de marca, formato 4:1) -->
     <section class="catalogo" id="catalogo" aria-labelledby="titulo-catalogo">
       <div class="contenedor">
-        <header class="seccion-titulo">
-          <p class="etiqueta etiqueta--azul">CONGELADAS</p>
-          <h2 id="titulo-catalogo"><img class="frase" src="img/h-sabor-azul.svg" alt="Elegí tu sabor."></h2>
+        <header class="seccion-titulo" data-entra>
+          <h2 id="titulo-catalogo"><img class="frase" src="img/h-sabor-azul.svg" alt="Elegí tu sabor." width="968" height="266"></h2>
           <p class="seccion-titulo__bajada">Sumá las que quieras al pedido. Cuando estés, lo mandás por WhatsApp y coordinamos la entrega.</p>
         </header>
         <div class="grilla" id="grilla" aria-live="polite"></div>
@@ -80,80 +79,83 @@
 
     <!-- PREPARACIÓN -->
     <section class="preparacion" id="preparacion" aria-labelledby="titulo-prep">
-      <div class="contenedor">
-        <header class="seccion-titulo seccion-titulo--claro">
-          <p class="etiqueta">DEL FREEZER A LA MESA</p>
-          <h2 id="titulo-prep"><img class="frase" src="img/h-piedra-blanco.svg" alt="A la piedra."></h2>
-        </header>
-        <ol class="pasos">
-          <li>
-            <span class="pasos__num">01</span>
-            <h3>FREEZER</h3>
-            <p>Conservala a -18 °C o menos. Una vez descongelada, no la vuelvas a congelar.</p>
-          </li>
-          <li>
-            <span class="pasos__num">02</span>
-            <h3>HORNO</h3>
-            <p>Sacale todo el envase y llevala congelada, sobre una bandeja, al horno bien precalentado.</p>
-          </li>
-          <li>
-            <span class="pasos__num">03</span>
-            <h3>A LA MESA</h3>
-            <p>Cocinala completamente, hasta que el borde dore y el queso burbujee. El tiempo depende de tu horno.</p>
-          </li>
-        </ol>
+      <div class="contenedor preparacion__in">
+        <figure class="preparacion__video" data-entra>
+          <video src="video/horno.mp4" poster="video/horno-poster.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Pizza Penitentia cocinándose en el horno" width="540" height="960"></video>
+        </figure>
+        <div class="preparacion__texto">
+          <header class="seccion-titulo" data-entra>
+            <h2 id="titulo-prep"><img class="frase" src="img/h-piedra-blanco.svg" alt="A la piedra." width="842" height="241"></h2>
+            <p class="seccion-titulo__bajada">Del freezer a la mesa, sin descongelar.</p>
+          </header>
+          <ol class="pasos">
+            <li data-entra>
+              <h3>En el freezer</h3>
+              <p>Conservala a -18 °C o menos. Una vez descongelada, no la vuelvas a congelar.</p>
+            </li>
+            <li data-entra>
+              <h3>Al horno</h3>
+              <p>Sacale todo el envase y llevala congelada, sobre una bandeja, al horno bien precalentado.</p>
+            </li>
+            <li data-entra>
+              <h3>A la mesa</h3>
+              <p>Cocinala completamente, hasta que el borde dore y el queso burbujee. El tiempo depende de tu horno.</p>
+            </li>
+          </ol>
+        </div>
       </div>
     </section>
 
     <!-- GALERÍA -->
     <section class="galeria" aria-labelledby="titulo-galeria">
       <div class="contenedor">
-        <header class="seccion-titulo">
-          <p class="etiqueta etiqueta--azul">HECHO ACÁ</p>
-          <h2 id="titulo-galeria"><img class="frase" src="img/h-sale-azul.svg" alt="Sale una Penitentia."></h2>
+        <header class="seccion-titulo" data-entra>
+          <h2 id="titulo-galeria"><img class="frase" src="img/h-sale-azul.svg" alt="Sale una Penitentia." width="1369" height="253"></h2>
+          <p class="seccion-titulo__bajada">Bollos, salsa y queso, de la mesada al estante. Todo pasa por nuestras manos.</p>
         </header>
         <div class="galeria__fotos">
-          <figure class="g1"><img src="img/mesa-sinlogo.jpg" alt="Pizzas listas sobre la mesa de trabajo" loading="lazy" width="1122" height="1072"></figure>
-          <figure class="g2"><img src="img/bollos.jpg" alt="Bollos de masa leudando" loading="lazy" width="720" height="1280"></figure>
-          <figure class="g3"><img src="img/estante.jpg" alt="Pizzas de cebolla en el estante" loading="lazy" width="720" height="1280"></figure>
+          <figure class="g1" data-entra><img src="img/mesa-sinlogo.jpg" alt="Pizzas listas sobre la mesa de trabajo" loading="lazy" width="1122" height="1072"></figure>
+          <figure class="g2" data-entra><img src="img/bollos.jpg" alt="Bollos de masa leudando" loading="lazy" width="720" height="1280"></figure>
+          <figure class="g3" data-entra><img src="img/estante.jpg" alt="Pizzas de cebolla en el estante" loading="lazy" width="720" height="1280"></figure>
         </div>
       </div>
     </section>
 
     <!-- CONTACTO -->
     <section class="contacto" id="contacto" aria-labelledby="titulo-contacto">
-      <div class="contenedor">
-        <header class="seccion-titulo">
-          <p class="etiqueta etiqueta--azul">CONTACTO</p>
-          <h2 id="titulo-contacto"><img class="frase" src="img/h-hablemos-azul.svg" alt="Hablemos."></h2>
+      <div class="contenedor contacto__in">
+        <header class="seccion-titulo" data-entra>
+          <h2 id="titulo-contacto"><img class="frase" src="img/h-hablemos-azul.svg" alt="Hablemos." width="679" height="195"></h2>
           <p class="seccion-titulo__bajada">Pedidos, consultas o reventa. Elegí por dónde.</p>
         </header>
-        <div class="canales">
-          <a class="canal" data-wa href="#" target="_blank" rel="noopener">
+        <ul class="canales">
+          <li data-entra><a class="canal" data-wa href="#" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z"/><path d="M9.2 8.3c.2-.4.5-.5.8-.5h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .5-.1.6l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.2.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.6.4-1.5.6-2.4.3-2.3-.8-4.1-2.6-4.9-4.9-.3-.9-.1-1.8.1-2.6z" fill="currentColor" stroke="none"/></svg>
-            <span class="canal__tipo">WHATSAPP</span>
+            <span class="canal__tipo">WhatsApp</span>
             <span class="canal__dato" data-wa-visible>261 212 5532</span>
-          </a>
-          <a class="canal" data-mail href="mailto:penitentia.oficial@gmail.com">
+          </a></li>
+          <li data-entra><a class="canal" data-mail href="mailto:penitentia.oficial@gmail.com">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>
-            <span class="canal__tipo">MAIL</span>
+            <span class="canal__tipo">Mail</span>
             <span class="canal__dato">penitentia.oficial@gmail.com</span>
-          </a>
-          <a class="canal" data-ig href="https://www.instagram.com/penitentia.ar/" target="_blank" rel="noopener">
+          </a></li>
+          <li data-entra><a class="canal" data-ig href="https://www.instagram.com/penitentia.ar/" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r=".7" fill="currentColor"/></svg>
-            <span class="canal__tipo">INSTAGRAM</span>
+            <span class="canal__tipo">Instagram</span>
             <span class="canal__dato">@penitentia.ar</span>
-          </a>
-        </div>
+          </a></li>
+        </ul>
       </div>
     </section>
   </main>
 
   <footer class="pie">
     <div class="contenedor pie__in">
-      <img src="img/logo-blanco.svg" alt="Penitentia Pizza" class="pie__logo" width="200" height="82">
-      <p class="pie__frase">PIZZA A LA PIEDRA · MENDOZA</p>
-      <p class="pie__legal">© <span data-anio>2026</span> Penitentia Pizza</p>
+      <img src="img/logo-blanco.svg" alt="Penitentia Pizza" class="pie__logo" width="700" height="289" loading="lazy">
+      <div class="pie__datos">
+        <p>Pizza a la piedra · Mendoza</p>
+        <p>© <span data-anio>2026</span> Penitentia Pizza</p>
+      </div>
     </div>
   </footer>
 
@@ -183,7 +185,7 @@
       <ul class="items" data-items></ul>
 
       <form class="datos" id="form-pedido" data-form novalidate>
-        <p class="datos__titulo">DATOS PARA LA ENTREGA</p>
+        <p class="datos__titulo">Datos para la entrega</p>
         <label>Nombre
           <input type="text" name="nombre" autocomplete="name" required placeholder="¿A nombre de quién?">
         </label>
@@ -203,7 +205,7 @@
     </div>
 
     <footer class="carrito__pie" data-pie-carrito>
-      <div class="total"><span>TOTAL</span><strong data-total>$0</strong></div>
+      <div class="total"><span>Total</span><strong data-total>$0</strong></div>
       <button class="btn btn--wa" type="submit" form="form-pedido">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z"/></svg>
         Pedir por WhatsApp
