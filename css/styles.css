@@ -38,11 +38,15 @@
 
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --ease-soft: cubic-bezier(.33, 1, .68, 1);
-  --t-press: 140ms;
+  --ease-hoja: cubic-bezier(.32, .72, 0, 1);   /* curva de las hojas de iOS: arranca rápido, frena suave */
+  --t-press: 100ms;
   --t-hover: 180ms;
   --t-ui: 320ms;
-  --t-reveal: 800ms;
+  --t-reveal: 560ms;
 }
+
+/* Arimo (misma métrica que Arial), alojada acá: solo se descarga si el equipo no tiene Arial */
+@font-face { font-family: "Arimo"; src: url("../fonts/arimo-latin.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: calc(var(--barra-alto) + 12px); -webkit-text-size-adjust: 100%; scrollbar-color: var(--azul) var(--azul-06); }
@@ -50,7 +54,9 @@ body {
   margin: 0; background: var(--blanco); color: var(--azul);
   font-family: var(--fuente); font-size: var(--t-cuerpo); line-height: 1.55;
   -webkit-font-smoothing: antialiased; overflow-x: hidden; caret-color: var(--azul);
+  -webkit-tap-highlight-color: transparent;
 }
+a, button, input, label { touch-action: manipulation; } /* sin demora de 300 ms al tocar */
 ::selection { background: var(--azul); color: var(--blanco); }
 .preparacion ::selection, .portada ::selection, .pie ::selection { background: var(--blanco); color: var(--azul); }
 img, video { display: block; max-width: 100%; height: auto; }
@@ -73,10 +79,9 @@ button, input, textarea { font: inherit; color: inherit; }
   font-weight: 700; font-size: var(--t-cuerpo); text-decoration: none; cursor: pointer;
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-hover) ease, color var(--t-hover) ease;
 }
-.btn:hover { transform: translateY(-2px); }
-.btn:active { transform: translateY(0) scale(.98); }
+.btn:active { transform: scale(.97); }
 .btn--blanco { background: var(--blanco); color: var(--azul); }
-.btn--blanco:hover { background: var(--azul-08); }
+@media (hover: hover) { .btn--blanco:hover { background: var(--azul-08); } }
 .btn--azul { background: var(--azul); color: var(--blanco); }
 .btn--azul:hover { background: var(--azul-medio); }
 .btn--wa { width: 100%; background: var(--azul); color: var(--blanco); min-height: 56px; }
@@ -84,9 +89,15 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn--wa:active { transform: scale(.985); }
 
 /* ---------- Barra superior ---------- */
-.barra { position: sticky; top: 0; z-index: 30; background: var(--azul); color: var(--blanco); transition: box-shadow var(--t-ui) ease; }
+.barra {
+  position: sticky; top: 0; z-index: 30; color: var(--blanco); transition: box-shadow var(--t-ui) ease;
+  background: rgba(29, 46, 74, .88); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); /* taste-skill-ignore: material translúcido estilo Apple, pedido explícito */
+  padding-top: env(safe-area-inset-top);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .barra { background: var(--azul); } }
+@media (prefers-reduced-transparency: reduce) { .barra { background: var(--azul); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 .barra.con-sombra { box-shadow: 0 6px 24px rgba(10, 18, 32, .25); } /* taste-skill-ignore: barra fija que flota sobre el contenido */
-.barra__in { max-width: var(--ancho); margin: 0 auto; padding: 0 var(--gutter); height: var(--barra-alto); display: flex; align-items: center; gap: 32px; }
+.barra__in { max-width: var(--ancho); margin: 0 auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); height: var(--barra-alto); display: flex; align-items: center; gap: 32px; }
 .barra__logo img { height: 48px; width: auto; }
 .barra__nav { display: flex; gap: 30px; margin-left: auto; }
 .barra__nav a {
@@ -98,11 +109,11 @@ button, input, textarea { font: inherit; color: inherit; }
 .barra__nav a:hover::after { transform: scaleX(1); }
 .btn-carrito {
   display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 16px;
-  border-radius: 999px; border: 0; background: var(--blanco-10); color: var(--blanco);
+  border-radius: 999px; border: 0; background: var(--azul-medio); color: var(--blanco);
   font-weight: 700; font-size: 15px; cursor: pointer;
   transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out);
 }
-.btn-carrito:hover { background: rgba(255, 255, 255, .18); }
+@media (hover: hover) { .btn-carrito:hover { background: #34507A; } }
 .btn-carrito:active { transform: scale(.96); }
 .contador {
   min-width: 28px; height: 28px; padding: 0 8px; border-radius: 999px; background: var(--blanco); color: var(--azul);
@@ -115,10 +126,12 @@ button, input, textarea { font: inherit; color: inherit; }
 .portada {
   position: relative; background: var(--azul); color: var(--blanco);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  min-height: min(calc(100svh - var(--barra-alto)), 820px); overflow: hidden;
+  min-height: min(100svh, 892px); overflow: hidden;
+  /* La portada pasa por debajo de la barra translúcida */
+  margin-top: calc(-1 * (var(--barra-alto) + env(safe-area-inset-top)));
 }
 .portada__texto {
-  padding: clamp(48px, 7vw, 100px) var(--gutter);
+  padding: calc(var(--barra-alto) + clamp(40px, 6vw, 88px)) var(--gutter) clamp(48px, 7vw, 100px);
   padding-left: max(var(--gutter), calc((100vw - var(--ancho)) / 2 + var(--gutter)));
   display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 2;
 }
@@ -151,10 +164,9 @@ button, input, textarea { font: inherit; color: inherit; }
   background: var(--azul-06); border-radius: var(--radio-foto); overflow: hidden;
   transition: background-color var(--t-hover) ease;
 }
-.pizza:hover { background: var(--azul-08); }
+@media (hover: hover) { .pizza:hover { background: var(--azul-08); } .pizza:hover .pizza__foto img { transform: scale(1.04); } }
 .pizza__foto { position: relative; overflow: hidden; background: var(--azul); min-height: 260px; }
 .pizza__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 900ms var(--ease-soft); }
-.pizza:hover .pizza__foto img { transform: scale(1.05); }
 .pizza__sello {
   position: absolute; left: 0; bottom: 0; background: var(--azul); color: var(--blanco);
   font-weight: 700; font-size: var(--t-chico); padding: 8px 14px 9px; border-top-right-radius: var(--radio-foto);
@@ -202,6 +214,9 @@ button, input, textarea { font: inherit; color: inherit; }
 .pasos h3 { font-size: var(--t-titulo); line-height: 1.15; }
 .pasos p { margin-top: 8px; color: var(--blanco-80); max-width: 52ch; }
 
+/* Lo que está lejos del primer pantallazo no se dibuja hasta acercarse */
+.galeria, .contacto, .pie { content-visibility: auto; contain-intrinsic-size: auto 900px; }
+
 /* ---------- Galería ---------- */
 .galeria { padding: var(--seccion) 0 calc(var(--seccion) * .6); }
 .galeria__fotos { display: grid; grid-template-columns: 1.7fr 1fr 1fr; gap: 14px; }
@@ -209,7 +224,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .galeria__fotos .g1 { aspect-ratio: auto; }
 .galeria__fotos .g2 { margin-top: clamp(32px, 6vw, 88px); }
 .galeria__fotos img { width: 100%; height: 100%; object-fit: cover; transition: transform 1200ms var(--ease-soft); }
-.galeria__fotos figure:hover img { transform: scale(1.04); }
+@media (hover: hover) { .galeria__fotos figure:hover img { transform: scale(1.03); } }
 
 /* ---------- Contacto ---------- */
 .contacto { padding: calc(var(--seccion) * .6) 0 var(--seccion); }
@@ -224,10 +239,12 @@ button, input, textarea { font: inherit; color: inherit; }
 .canal svg { grid-row: 1 / 3; width: 36px; height: 36px; transition: transform var(--t-ui) var(--ease-out); }
 .canal__tipo { font-size: var(--t-chico); color: var(--azul-55); transition: color var(--t-hover) ease; }
 .canal__dato { font-weight: 700; font-size: var(--t-destacado); overflow-wrap: anywhere; line-height: 1.3; }
-.canal:hover { background: var(--azul); color: var(--blanco); }
-.canal:hover .canal__tipo { color: var(--blanco-60); }
-.canal:hover svg { transform: rotate(-8deg) scale(1.08); }
-.canal:active { transform: scale(.99); }
+@media (hover: hover) {
+  .canal:hover { background: var(--azul); color: var(--blanco); }
+  .canal:hover .canal__tipo { color: var(--blanco-60); }
+  .canal:hover svg { transform: rotate(-8deg) scale(1.08); }
+}
+.canal:active { transform: scale(.98); background: var(--azul-08); }
 
 /* ---------- Pie: el nombre vuelve a todo lo ancho ---------- */
 .pie { background: var(--azul); color: var(--blanco); padding: clamp(64px, 8vw, 120px) 0 36px; }
@@ -241,10 +258,12 @@ button, input, textarea { font: inherit; color: inherit; }
 .carrito {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 50; width: min(440px, 100%);
   background: var(--blanco); display: flex; flex-direction: column;
-  transform: translateX(100%); transition: transform 420ms var(--ease-out);
+  transform: translateX(100%); transition: transform 460ms var(--ease-hoja);
   box-shadow: -18px 0 40px rgba(10, 18, 32, .2); /* taste-skill-ignore: panel que flota sobre la página */
 }
 .carrito.abierto { transform: none; }
+.carrito.arrastrando { transition: none; }
+.carrito__asa { display: none; }
 .carrito__cab { background: var(--azul); color: var(--blanco); display: flex; align-items: center; justify-content: space-between; padding: 18px 16px 18px 24px; }
 .carrito__cab img { height: 46px; width: auto; }
 .cerrar { width: 44px; height: 44px; border-radius: 999px; border: 0; background: transparent; color: var(--blanco); cursor: pointer; display: grid; place-items: center; transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out); }
@@ -319,19 +338,19 @@ button, input, textarea { font: inherit; color: inherit; }
 
 /* ---------- Movimiento (solo con JS; sin JS todo queda visible) ---------- */
 /* Firma: se escribe de izquierda a derecha, como trazada a mano */
-.js .portada__firma img { animation: firma 1400ms var(--ease-out) 150ms both; }
-.js .portada__firma span { animation: subir 700ms var(--ease-out) 900ms both; }
-.js .portada__frase { animation: subir 700ms var(--ease-out) 1000ms both; }
-.js .portada__bajada { animation: subir 700ms var(--ease-out) 1080ms both; }
-.js .portada__acciones { animation: subir 700ms var(--ease-out) 1160ms both; }
-.js .portada__foto img { animation: horno 2600ms var(--ease-soft) both; }
+.js .portada__firma img { animation: firma 800ms var(--ease-out) both; }
+.js .portada__firma span { animation: subir 480ms var(--ease-out) 180ms both; }
+.js .portada__frase { animation: subir 480ms var(--ease-out) 240ms both; }
+.js .portada__bajada { animation: subir 480ms var(--ease-out) 300ms both; }
+.js .portada__acciones { animation: subir 480ms var(--ease-out) 360ms both; }
+.js .portada__foto img { animation: horno 1600ms var(--ease-soft) both; }
 @keyframes firma { from { clip-path: inset(-20% 100% -20% 0); } to { clip-path: inset(-20% 0 -20% 0); } }
-@keyframes subir { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
-@keyframes horno { from { transform: scale(1.12); } to { transform: scale(1); } }
+@keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes horno { from { transform: scale(1.06); } to { transform: scale(1); } }
 
 /* Entradas por sección: textos suben, fotos se asientan desde la escala */
-.js [data-entra].espera { opacity: 0; transform: translateY(26px); }
-.js figure[data-entra].espera, .js .pizza[data-entra].espera { transform: translateY(18px) scale(.97); }
+.js [data-entra].espera { opacity: 0; transform: translateY(16px); }
+.js figure[data-entra].espera, .js .pizza[data-entra].espera { transform: translateY(12px) scale(.98); }
 .js [data-entra] { transition: opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out); transition-delay: var(--retraso, 0ms); }
 
 /* ---------- Responsive ---------- */
@@ -343,7 +362,7 @@ button, input, textarea { font: inherit; color: inherit; }
   .barra__nav { display: none; }
   .btn-carrito { margin-left: auto; }
   .portada { grid-template-columns: 1fr; min-height: 0; }
-  .portada__foto { order: -1; height: 56vw; min-height: 260px; max-height: 460px; }
+  .portada__foto { order: -1; height: calc(56vw + var(--barra-alto)); min-height: 300px; max-height: 520px; }
   .portada__foto img { object-position: 62% 100%; }
   .portada__foto::before { background: linear-gradient(0deg, var(--azul) 0%, rgba(29,46,74,.4) 26%, rgba(29,46,74,0) 56%); } /* taste-skill-ignore: velo neutro sobre la foto */
   .portada__texto { padding-top: 4px; }
@@ -371,6 +390,16 @@ button, input, textarea { font: inherit; color: inherit; }
   .canal svg { width: 32px; height: 32px; }
   .pie__datos { justify-content: center; text-align: center; }
   .flotante:not([hidden]) { display: flex; }
+
+  /* Carrito como hoja que sube desde abajo, se cierra arrastrándola hacia abajo */
+  .carrito {
+    top: auto; left: 0; right: 0; width: 100%; max-height: calc(100svh - 24px - env(safe-area-inset-top));
+    border-radius: 18px 18px 0 0; overflow: hidden; transform: translateY(100%);
+    box-shadow: 0 -12px 40px rgba(10, 18, 32, .25); /* taste-skill-ignore: hoja flotante */
+  }
+  .carrito__cab { position: relative; padding-top: 26px; touch-action: none; cursor: grab; }
+  .carrito__asa { display: block; position: absolute; top: 9px; left: 50%; width: 40px; height: 5px; margin-left: -20px; border-radius: 99px; background: rgba(255, 255, 255, .45); }
+  .carrito__cab img { height: 40px; }
   body.con-flotante .pie { padding-bottom: 110px; }
 }
 

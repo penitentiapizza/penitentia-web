@@ -2,7 +2,7 @@
 <html lang="es-AR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Penitentia Pizza · Pizzas congeladas a la piedra</title>
   <meta name="description" content="Pizzas congeladas a la piedra de Penitentia. Elegí tu sabor, armá tu pedido y mandalo por WhatsApp. Mendoza, Argentina.">
   <meta name="theme-color" content="#1D2E4A">
@@ -15,10 +15,8 @@
   <meta property="og:url" content="https://penitentia.com.ar/">
   <meta property="og:image" content="https://penitentia.com.ar/img/mesa-sinlogo.jpg">
 
-  <!-- Arimo: misma métrica que Arial, para equipos que no tienen Arial (Android) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;700&display=swap" rel="stylesheet">
+  <!-- La foto de portada se pide primero, en el tamaño justo para cada pantalla -->
+  <link rel="preload" as="image" type="image/webp" href="img/hero-1120.webp" imagesrcset="img/hero-640.webp 640w, img/hero-1120.webp 1120w" imagesizes="(max-width: 900px) 100vw, 54vw" fetchpriority="high">
   <link rel="stylesheet" href="css/styles.css">
   <script>document.documentElement.classList.add("js")</script>
 </head>
@@ -61,7 +59,7 @@
         </div>
       </div>
       <figure class="portada__foto">
-        <img src="img/hero.jpg" alt="Pizza Penitentia entrando al horno a la piedra" width="1122" height="1150" fetchpriority="high">
+        <img src="img/hero-1120.webp" srcset="img/hero-640.webp 640w, img/hero-1120.webp 1120w" sizes="(max-width: 900px) 100vw, 54vw" alt="Pizza Penitentia entrando al horno a la piedra" width="1120" height="1148" fetchpriority="high" decoding="async">
       </figure>
     </section>
 
@@ -81,7 +79,7 @@
     <section class="preparacion" id="preparacion" aria-labelledby="titulo-prep">
       <div class="contenedor preparacion__in">
         <figure class="preparacion__video" data-entra>
-          <video src="video/horno.mp4" poster="video/horno-poster.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Pizza Penitentia cocinándose en el horno" width="540" height="960"></video>
+          <video data-src="video/horno.mp4" poster="video/horno-poster.webp" muted loop playsinline preload="none" aria-label="Pizza Penitentia cocinándose en el horno" width="540" height="960"></video>
         </figure>
         <div class="preparacion__texto">
           <header class="seccion-titulo" data-entra>
@@ -114,9 +112,9 @@
           <p class="seccion-titulo__bajada">Bollos, salsa y queso, de la mesada al estante. Todo pasa por nuestras manos.</p>
         </header>
         <div class="galeria__fotos">
-          <figure class="g1" data-entra><img src="img/mesa-sinlogo.jpg" alt="Pizzas listas sobre la mesa de trabajo" loading="lazy" width="1122" height="1072"></figure>
-          <figure class="g2" data-entra><img src="img/bollos.jpg" alt="Bollos de masa leudando" loading="lazy" width="720" height="1280"></figure>
-          <figure class="g3" data-entra><img src="img/estante.jpg" alt="Pizzas de cebolla en el estante" loading="lazy" width="720" height="1280"></figure>
+          <figure class="g1" data-entra><img src="img/mesa-sinlogo-1120.webp" srcset="img/mesa-sinlogo-640.webp 640w, img/mesa-sinlogo-1120.webp 1120w" sizes="(max-width: 900px) 100vw, 46vw" alt="Pizzas listas sobre la mesa de trabajo" loading="lazy" decoding="async" width="1120" height="1070"></figure>
+          <figure class="g2" data-entra><img src="img/bollos-720.webp" srcset="img/bollos-420.webp 420w, img/bollos-720.webp 720w" sizes="(max-width: 900px) 50vw, 26vw" alt="Bollos de masa leudando" loading="lazy" decoding="async" width="720" height="1280"></figure>
+          <figure class="g3" data-entra><img src="img/estante-720.webp" srcset="img/estante-420.webp 420w, img/estante-720.webp 720w" sizes="(max-width: 900px) 50vw, 26vw" alt="Pizzas de cebolla en el estante" loading="lazy" decoding="async" width="720" height="1280"></figure>
         </div>
       </div>
     </section>
@@ -168,7 +166,8 @@
   <!-- CARRITO -->
   <div class="velo" data-cerrar-carrito hidden></div>
   <aside class="carrito" id="carrito" role="dialog" aria-modal="true" aria-labelledby="titulo-carrito" hidden>
-    <header class="carrito__cab">
+    <header class="carrito__cab" data-asa>
+      <span class="carrito__asa" aria-hidden="true"></span>
       <h2 id="titulo-carrito"><img src="img/h-pedido-blanco.svg" alt="Tu pedido"></h2>
       <button class="cerrar" type="button" data-cerrar-carrito aria-label="Cerrar pedido">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>

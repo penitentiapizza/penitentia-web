@@ -39,6 +39,13 @@
     pintarTodo();
   }
 
+  /* Fotos: si hay versión -480 de una -800.webp, los celulares bajan la chica */
+  function chica(foto) { return /-800\.webp$/.test(foto) ? foto.replace(/-800\.webp$/, "-480.webp") : foto; }
+  function fuente(foto) {
+    if (!/-800\.webp$/.test(foto)) return 'src="' + foto + '"';
+    return 'src="' + foto + '" srcset="' + chica(foto) + ' 480w, ' + foto + ' 800w" sizes="(max-width: 600px) 100vw, (max-width: 1080px) 40vw, 22vw"';
+  }
+
   /* ---------- Catálogo ---------- */
   var grilla = $("#grilla");
   var seleccion = {}; // cantidad elegida en cada tarjeta antes de agregar
@@ -50,7 +57,7 @@
       return (
         '<article class="pizza" data-id="' + p.id + '" data-entra>' +
           '<div class="pizza__foto">' +
-            '<img src="' + p.foto + '" alt="Pizza ' + p.nombre + '" loading="lazy" width="800" height="470">' +
+            '<img ' + fuente(p.foto) + ' alt="Pizza ' + p.nombre + '" loading="lazy" decoding="async" width="800" height="470">' +
             '<span class="pizza__sello">' + (hay ? "Congelada" : "Sin stock") + '</span>' +
           '</div>' +
           '<div class="pizza__cuerpo">' +
@@ -115,7 +122,7 @@
       var p = porId(id), c = pedido[id];
       return (
         '<li class="item" data-id="' + id + '">' +
-          '<img src="' + p.foto + '" alt="" width="64" height="64">' +
+          '<img src="' + chica(p.foto) + '" alt="" width="64" height="64" decoding="async">' +
           '<div>' +
             '<p class="item__nombre">' + p.nombre + '</p>' +
             '<p class="item__unit">' + pesos(p.precio) + ' c/u</p>' +
@@ -145,8 +152,11 @@
     else if (ev.target.closest("[data-quitar]")) cambiar(id, 0);
   });
 
+  var cierreT;
   function abrir() {
+    clearTimeout(cierreT); // se puede reabrir a mitad del cierre sin que se esconda
     ultimoFoco = document.activeElement;
+    carrito.style.transform = "";
     pintarCarrito();
     carrito.hidden = false; velo.hidden = false;
     requestAnimationFrame(function () { carrito.classList.add("abierto"); velo.classList.add("visible"); });
@@ -158,10 +168,52 @@
     carrito.classList.remove("abierto"); velo.classList.remove("visible");
     document.body.style.overflow = "";
     $$("[data-abrir-carrito]").forEach(function (b) { b.setAttribute("aria-expanded", "false"); });
-    setTimeout(function () { carrito.hidden = true; velo.hidden = true; }, 320);
+    carrito.style.transform = "";
+    clearTimeout(cierreT);
+    cierreT = setTimeout(function () { carrito.hidden = true; velo.hidden = true; }, 470);
     if (ultimoFoco && ultimoFoco.focus) ultimoFoco.focus();
   }
   $$("[data-abrir-carrito]").forEach(function (b) { b.addEventListener("click", abrir); });
+
+  /* Hoja del celular: se arrastra 1:1 con el dedo y se cierra según hacia dónde y qué tan rápido va */
+  (function () {
+    var asa = $("[data-asa]", carrito);
+    var celular = window.matchMedia("(max-width: 600px)");
+    var inicio = null, historial = [];
+    asa.addEventListener("pointerdown", function (ev) {
+      if (!celular.matches || ev.target.closest(".cerrar")) return;
+      asa.setPointerCapture(ev.pointerId);
+      inicio = ev.clientY; historial = [{ y: ev.clientY, t: ev.timeStamp }];
+      carrito.classList.add("arrastrando");
+    });
+    asa.addEventListener("pointermove", function (ev) {
+      if (inicio === null) return;
+      var dy = ev.clientY - inicio;
+      // Hacia arriba resiste (borde elástico); hacia abajo sigue al dedo
+      if (dy < 0) dy = -(Math.abs(dy) * 60) / (60 + Math.abs(dy));
+      carrito.style.transform = "translateY(" + dy + "px)";
+      historial.push({ y: ev.clientY, t: ev.timeStamp });
+      if (historial.length > 5) historial.shift();
+    });
+    function soltar(ev) {
+      if (inicio === null) return;
+      var dy = Math.max(0, ev.clientY - inicio);
+      var a = historial[0], b = historial[historial.length - 1];
+      var vel = b.t > a.t ? (b.y - a.y) / (b.t - a.t) * 1000 : 0; // px/s
+      // Proyección de inercia (misma fórmula que el scroll de iOS)
+      var proyectado = dy + (vel / 1000) * .998 / (1 - .998);
+      inicio = null;
+      carrito.classList.remove("arrastrando");
+      if (proyectado > carrito.offsetHeight * .45 || vel > 900) {
+        carrito.style.transform = "translateY(100%)";
+        cerrar();
+      } else {
+        carrito.style.transform = "";
+      }
+    }
+    asa.addEventListener("pointerup", soltar);
+    asa.addEventListener("pointercancel", soltar);
+  })();
   $$("[data-cerrar-carrito]").forEach(function (b) { b.addEventListener("click", cerrar); });
   document.addEventListener("keydown", function (ev) {
     if (ev.key === "Escape" && !carrito.hidden) cerrar();
@@ -302,14 +354,18 @@
     window.addEventListener("scroll", alScroll, { passive: true });
   }
 
-  /* El video del horno solo corre cuando se ve, y nunca con movimiento reducido */
+  /* El video del horno no se descarga hasta acercarse, corre solo cuando se ve y nunca con movimiento reducido */
   function prepararVideo() {
     var v = $(".preparacion__video video");
     if (!v) return;
-    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) { v.removeAttribute("autoplay"); v.pause(); return; }
-    if (!("IntersectionObserver" in window)) return;
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return; // queda la foto fija
+    var ahorro = navigator.connection && navigator.connection.saveData;
+    if (ahorro) return; // modo ahorro de datos: solo la foto
+    function cargar() { if (!v.src) { v.src = v.getAttribute("data-src"); v.load(); } }
+    function reproducir() { cargar(); var p = v.play(); if (p && p.catch) p.catch(function () {}); }
+    if (!("IntersectionObserver" in window)) { reproducir(); return; }
     new IntersectionObserver(function (e) {
-      if (e[0].isIntersecting) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause();
-    }).observe(v);
+      if (e[0].isIntersecting) reproducir(); else if (v.src) v.pause();
+    }, { rootMargin: "300px 0px" }).observe(v);
   }
 })();
