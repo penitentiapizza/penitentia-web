@@ -3,7 +3,7 @@
 Sitio estático (HTML + CSS + JS, sin dependencias) para **penitentia.com.ar**, publicado con GitHub Pages.
 
 - Catálogo de pizzas congeladas con carrito.
-- El carrito arma el pedido y lo abre en WhatsApp (261 212 5532).
+- El carrito arma el pedido y lo abre en WhatsApp (261 725 2048).
 - Contacto directo a WhatsApp, mail (penitentia.oficial@gmail.com) e Instagram (@penitentia.ar).
 - Colores y tipografía según el Cuaderno de Marca v8: azul `#1D2E4A`, blanco, Brush Script MT para la firma y frases, Arial Bold / Regular para la información.
 

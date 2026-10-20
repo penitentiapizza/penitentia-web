@@ -34,6 +34,8 @@
   --gutter: clamp(16px, 4vw, 40px);
   --seccion: clamp(88px, 11vw, 168px);
   --radio-foto: 6px;
+  --radio-catalogo: 20px;   /* fotos del catálogo */
+  --radio-ficha: 28px;      /* ficha que las contiene (radio de la foto + margen) */
   --barra-alto: 72px;
 
   --ease-out: cubic-bezier(.22, 1, .36, 1);
@@ -141,8 +143,6 @@ button, input, textarea { font: inherit; color: inherit; }
 .portada__frase { margin-top: clamp(32px, 4vw, 48px); font-size: var(--t-titulo); font-weight: 700; line-height: 1.2; max-width: 20ch; text-wrap: balance; }
 .portada__bajada { margin-top: 14px; max-width: 44ch; color: var(--blanco-80); }
 .portada__acciones { margin-top: 36px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
-.portada__desde { color: var(--blanco-80); font-size: var(--t-cuerpo); }
-.portada__desde strong { color: var(--blanco); font-size: var(--t-destacado); font-variant-numeric: tabular-nums; }
 .portada__foto { position: relative; overflow: hidden; }
 .portada__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
 .portada__foto::before {
@@ -161,15 +161,16 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .pizza {
   display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-  background: var(--azul-06); border-radius: var(--radio-foto); overflow: hidden;
+  background: var(--azul-06); border-radius: var(--radio-ficha); overflow: hidden;
   transition: background-color var(--t-hover) ease;
+  padding: 10px; gap: 0;
 }
 @media (hover: hover) { .pizza:hover { background: var(--azul-08); } .pizza:hover .pizza__foto img { transform: scale(1.04); } }
-.pizza__foto { position: relative; overflow: hidden; background: var(--azul); min-height: 260px; }
+.pizza__foto { position: relative; overflow: hidden; background: var(--azul); min-height: 260px; border-radius: var(--radio-catalogo); isolation: isolate; }
 .pizza__foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 900ms var(--ease-soft); }
 .pizza__sello {
   position: absolute; left: 0; bottom: 0; background: var(--azul); color: var(--blanco);
-  font-weight: 700; font-size: var(--t-chico); padding: 8px 14px 9px; border-top-right-radius: var(--radio-foto);
+  font-weight: 700; font-size: var(--t-chico); padding: 7px 14px 8px; border-radius: 999px; left: 12px; bottom: 12px;
 }
 .pizza__cuerpo { padding: clamp(22px, 2.4vw, 32px); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .pizza__nombre { font-weight: 700; font-size: var(--t-sabor); line-height: 1.08; text-transform: uppercase; letter-spacing: -.01em; text-wrap: balance; }
@@ -277,7 +278,7 @@ button, input, textarea { font: inherit; color: inherit; }
 
 .items { list-style: none; display: grid; gap: 8px; }
 .item { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 12px; border-radius: var(--radio-foto); background: var(--azul-06); }
-.item img { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; }
+.item img { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; }
 .item__nombre { font-weight: 700; font-size: 15px; text-transform: uppercase; line-height: 1.2; }
 .item__unit { font-size: var(--t-chico); color: var(--azul-55); margin-top: 2px; }
 .item__der { display: grid; justify-items: end; gap: 6px; }
@@ -307,6 +308,11 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .datos .opcion:has(input:checked) { background: var(--azul); color: var(--blanco); }
 .opcion input { accent-color: var(--blanco); margin: 0; }
+.datos .opcion small { display: block; font-size: var(--t-chico); font-weight: 400; opacity: .8; }
+.datos .opcion { border-radius: 16px; align-items: center; }
+.subtotales { display: grid; gap: 4px; font-size: 15px; color: var(--azul-70); }
+.subtotales p { display: flex; justify-content: space-between; }
+.subtotales span:last-child { font-variant-numeric: tabular-nums; }
 .error { font-size: 15px; font-weight: 700; }
 
 .carrito__pie { padding: 18px 20px calc(18px + env(safe-area-inset-bottom)); display: grid; gap: 12px; background: var(--azul-06); }
@@ -381,7 +387,6 @@ button, input, textarea { font: inherit; color: inherit; }
   .btn-carrito span:not(.contador) { display: none; }
   .btn-carrito { padding: 0 8px; }
   .portada__acciones .btn { flex: 1 1 100%; }
-  .portada__desde { width: 100%; text-align: center; }
   .pizza { grid-template-columns: 1fr; }
   .pizza__foto { min-height: 0; aspect-ratio: 16 / 10; }
   .pasos li { padding: 20px 22px; }

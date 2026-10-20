@@ -4,6 +4,8 @@
   var PRODUCTOS = window.PENITENTIA_PRODUCTOS || [];
   var CONTACTO = window.PENITENTIA_CONTACTO || {};
   var CLAVE = "penitentia-pedido-v1";
+  var CLAVE_DATOS = "penitentia-datos-v1";
+  var ENVIO = Number(window.PENITENTIA_ENVIO) || 0;
 
   var $ = function (sel, raiz) { return (raiz || document).querySelector(sel); };
   var $$ = function (sel, raiz) { return Array.prototype.slice.call((raiz || document).querySelectorAll(sel)); };
@@ -30,7 +32,10 @@
     try { localStorage.setItem(CLAVE, JSON.stringify(pedido)); } catch (e) { /* modo privado: seguimos sin guardar */ }
   }
   function unidades() { return Object.keys(pedido).reduce(function (t, id) { return t + pedido[id]; }, 0); }
-  function total() { return Object.keys(pedido).reduce(function (t, id) { return t + pedido[id] * porId(id).precio; }, 0); }
+  function subtotal() { return Object.keys(pedido).reduce(function (t, id) { return t + pedido[id] * porId(id).precio; }, 0); }
+  function conEnvio() { var f = document.getElementById("form-pedido"); var e = f && f.querySelector('input[name="entrega"]:checked'); return !!e && e.value === "Envío"; }
+  function costoEnvio() { return conEnvio() ? ENVIO : 0; }
+  function total() { return subtotal() + costoEnvio(); }
 
   function cambiar(id, cantidad) {
     cantidad = Math.max(0, Math.min(99, cantidad));
@@ -140,6 +145,11 @@
       );
     }).join("");
 
+    pintarTotales();
+  }
+  function pintarTotales() {
+    $("[data-subtotal]").textContent = pesos(subtotal());
+    $("[data-envio]").textContent = conEnvio() ? pesos(ENVIO) : "Sin cargo";
     $("[data-total]").textContent = pesos(total());
   }
 
@@ -227,11 +237,35 @@
     else if (!ev.shiftKey && document.activeElement === ultimo) { ev.preventDefault(); primero.focus(); }
   }
 
-  /* Dirección solo si elige envío */
+  /* Dirección solo si elige envío; el total suma el envío */
   var campoDir = $("[data-campo-direccion]");
+  $$("[data-costo-envio]").forEach(function (el) { el.textContent = pesos(ENVIO); });
   form.addEventListener("change", function (ev) {
-    if (ev.target.name === "entrega") campoDir.hidden = ev.target.value !== "Envío";
+    if (ev.target.name === "entrega") { campoDir.hidden = !conEnvio(); pintarTotales(); pintarIndicadores(); }
+    guardarDatos();
   });
+  form.addEventListener("input", guardarDatos);
+
+  /* Los datos de entrega también quedan guardados en este navegador */
+  function guardarDatos() {
+    try {
+      localStorage.setItem(CLAVE_DATOS, JSON.stringify({
+        nombre: form.nombre.value, direccion: form.direccion.value, notas: form.notas.value,
+        entrega: conEnvio() ? "Envío" : "Retiro"
+      }));
+    } catch (e) { /* sin almacenamiento: seguimos igual */ }
+  }
+  (function leerDatos() {
+    try {
+      var d = JSON.parse(localStorage.getItem(CLAVE_DATOS) || "null");
+      if (d) {
+        form.nombre.value = d.nombre || ""; form.direccion.value = d.direccion || ""; form.notas.value = d.notas || "";
+        var r = form.querySelector('input[name="entrega"][value="' + (d.entrega === "Envío" ? "Envío" : "Retiro") + '"]');
+        if (r) r.checked = true;
+      }
+    } catch (e) { /* datos viejos o dañados: se ignoran */ }
+    campoDir.hidden = !conEnvio();
+  })();
 
   /* ---------- Enviar a WhatsApp ---------- */
   form.addEventListener("submit", function (ev) {
@@ -253,9 +287,11 @@
       var p = porId(id);
       lineas.push("• " + pedido[id] + " × " + p.nombre + " — " + pesos(p.precio * pedido[id]));
     });
-    lineas.push("", "Total: " + pesos(total()) + " (" + unidades() + (unidades() === 1 ? " pizza" : " pizzas") + ")", "");
+    lineas.push("", "Pizzas: " + pesos(subtotal()) + " (" + unidades() + (unidades() === 1 ? " pizza" : " pizzas") + ")");
+    lineas.push("Envío: " + (entrega === "Envío" ? pesos(ENVIO) : "sin cargo (retiro)"));
+    lineas.push("Total: " + pesos(total()), "");
     lineas.push("Nombre: " + nombre);
-    lineas.push("Entrega: " + entrega + (entrega === "Envío" ? " — " + direccion : ""));
+    lineas.push("Entrega: " + (entrega === "Envío" ? "Envío a domicilio — " + direccion : "Retiro en domicilio"));
     if (notas) lineas.push("Comentarios: " + notas);
 
     window.open(enlaceWa(lineas.join("\n")), "_blank", "noopener");
@@ -310,10 +346,6 @@
   /* Sombra de la barra al bajar */
   var barra = $("#barra");
   window.addEventListener("scroll", function () { barra.classList.toggle("con-sombra", window.scrollY > 8); }, { passive: true });
-
-  /* Precio "desde" en la portada */
-  var precios = PRODUCTOS.filter(function (p) { return p.disponible !== false; }).map(function (p) { return p.precio; });
-  if (precios.length) $$("[data-desde]").forEach(function (el) { el.textContent = pesos(Math.min.apply(null, precios)); });
 
   pintarCatalogo();
   pintarTodo();

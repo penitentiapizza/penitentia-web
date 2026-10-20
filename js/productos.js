@@ -46,10 +46,13 @@ window.PENITENTIA_PRODUCTOS = [
   }
 ];
 
+/* Costo del envío a domicilio (número sin puntos). El retiro no tiene cargo. */
+window.PENITENTIA_ENVIO = 4000;
+
 /* Datos de contacto: se usan en toda la página */
 window.PENITENTIA_CONTACTO = {
-  whatsapp: "5492612125532",          // código país 54 + 9 + 261 2125532
-  whatsappVisible: "261 212 5532",
+  whatsapp: "5492617252048",          // código país 54 + 9 + 261 7252048
+  whatsappVisible: "261 725 2048",
   email: "penitentia.oficial@gmail.com",
   instagram: "penitentia.ar"
 };
