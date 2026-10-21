@@ -6,6 +6,7 @@
   var CLAVE = "penitentia-pedido-v1";
   var CLAVE_DATOS = "penitentia-datos-v1";
   var ENVIO = Number(window.PENITENTIA_ENVIO) || 0;
+  var DIA_REPARTO = window.PENITENTIA_DIA_REPARTO || "viernes";
 
   var $ = function (sel, raiz) { return (raiz || document).querySelector(sel); };
   var $$ = function (sel, raiz) { return Array.prototype.slice.call((raiz || document).querySelectorAll(sel)); };
@@ -253,6 +254,7 @@
   /* Dirección solo si elige envío; el total suma el envío */
   var campoDir = $("[data-campo-direccion]");
   $$("[data-costo-envio]").forEach(function (el) { el.textContent = pesos(ENVIO); });
+  $$("[data-dia-reparto]").forEach(function (el) { el.textContent = DIA_REPARTO; });
   form.addEventListener("change", function (ev) {
     if (ev.target.name === "entrega") { campoDir.hidden = !conEnvio(); pintarTotales(); pintarIndicadores(); }
     guardarDatos();
@@ -304,7 +306,7 @@
     lineas.push("Envío: " + (entrega === "Envío" ? pesos(ENVIO) : "sin cargo (retiro)"));
     lineas.push("Total: " + pesos(total()), "");
     lineas.push("Nombre: " + nombre);
-    lineas.push("Entrega: " + (entrega === "Envío" ? "Envío a domicilio — " + direccion : "Retiro en domicilio"));
+    lineas.push("Entrega: " + (entrega === "Envío" ? "Envío a domicilio (reparto del " + DIA_REPARTO + ") — " + direccion : "Retiro en domicilio"));
     if (notas) lineas.push("Comentarios: " + notas);
 
     window.open(enlaceWa(lineas.join("\n")), "_blank", "noopener");

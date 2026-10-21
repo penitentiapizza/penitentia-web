@@ -40,32 +40,24 @@ window.PENITENTIA_PRODUCTOS = [
   },
   {
     id: "jamon-y-morron",
-    nombre: "Jamón cocido y morrón",
-    descripcion: "Salsa de tomate, mozzarella, jamón cocido y morrón.",
-    precio: null,
+    nombre: "Jamón y morrón",
+    descripcion: "Salsa de tomate, mozzarella, jamón cocido, morrón y aceitunas verdes.",
+    precio: 11100,
     foto: "img/p-jamon-800.webp",
-    disponible: true
-  },
-  {
-    id: "pepperoni",
-    nombre: "Pepperoni",
-    descripcion: "Salsa de tomate, mozzarella y pepperoni.",
-    precio: null,
-    foto: "img/p-pepperoni-800.webp",
     disponible: true
   },
   {
     id: "agridulce",
     nombre: "Agridulce",
-    descripcion: "Mozzarella, peras, miel y queso azul.",
-    precio: 10400,
+    descripcion: "Salsa de tomate, mozzarella, peras, miel y queso azul.",
+    precio: 10900,
     foto: "",
     disponible: true
   },
   {
     id: "tropical",
     nombre: "Tropical",
-    descripcion: "Mozzarella, ananá y jamón cocido.",
+    descripcion: "Salsa de tomate, mozzarella, ananá y jamón cocido.",
     precio: 13300,
     foto: "",
     disponible: true
@@ -73,24 +65,8 @@ window.PENITENTIA_PRODUCTOS = [
   {
     id: "americana",
     nombre: "Americana",
-    descripcion: "Mozzarella, salchicha alemana y panceta.",
+    descripcion: "Salsa de tomate, mozzarella, salchicha alemana y panceta.",
     precio: 14200,
-    foto: "",
-    disponible: true
-  },
-  {
-    id: "mortadella",
-    nombre: "Mortadella",
-    descripcion: "Mortadella, pistacho y un toque de oliva con ajo.",
-    precio: null,
-    foto: "",
-    disponible: true
-  },
-  {
-    id: "jamon-crudo",
-    nombre: "Jamón crudo",
-    descripcion: "Jamón crudo y rúcula.",
-    precio: null,
     foto: "",
     disponible: true
   }
@@ -98,6 +74,9 @@ window.PENITENTIA_PRODUCTOS = [
 
 /* Costo del envío a domicilio (número sin puntos). El retiro no tiene cargo. */
 window.PENITENTIA_ENVIO = 4000;
+
+/* Día de reparto: se muestra en el catálogo, en el carrito y en el mensaje de WhatsApp */
+window.PENITENTIA_DIA_REPARTO = "viernes";
 
 /* Datos de contacto: se usan en toda la página */
 window.PENITENTIA_CONTACTO = {

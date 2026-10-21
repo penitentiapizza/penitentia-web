@@ -68,6 +68,10 @@
         <header class="seccion-titulo" data-entra>
           <h2 id="titulo-catalogo"><img class="frase" src="img/h-sabor-azul.svg" alt="Elegí tu sabor." width="968" height="266"></h2>
           <p class="seccion-titulo__bajada">Sumá las que quieras al pedido. Cuando estés, lo mandás por WhatsApp y coordinamos la entrega.</p>
+          <p class="reparto">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
+            <span>Repartimos los <strong data-dia-reparto>viernes</strong>. Pedí antes y te llega ese día.</span>
+          </p>
         </header>
         <div class="grilla" id="grilla" aria-live="polite"></div>
         <p class="aviso">La descripción de sabor es ilustrativa. Ingredientes y alérgenos en la etiqueta de cada pizza.</p>
@@ -190,7 +194,7 @@
         <fieldset class="entrega">
           <legend>¿Cómo lo recibís?</legend>
           <label class="opcion"><input type="radio" name="entrega" value="Retiro" checked> <span>Retiro en domicilio <small>Sin cargo</small></span></label>
-          <label class="opcion"><input type="radio" name="entrega" value="Envío"> <span>Envío a domicilio <small data-costo-envio>$ 4.000</small></span></label>
+          <label class="opcion"><input type="radio" name="entrega" value="Envío"> <span>Envío a domicilio <small><span data-costo-envio>$ 4.000</span> · Reparto el <span data-dia-reparto>viernes</span></small></span></label>
         </fieldset>
         <label data-campo-direccion hidden>Dirección
           <input type="text" name="direccion" autocomplete="street-address" placeholder="Calle, número y departamento">

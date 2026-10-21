@@ -153,6 +153,12 @@ button, input, textarea { font: inherit; color: inherit; }
 /* ---------- Títulos de sección ---------- */
 .seccion-titulo { max-width: 680px; margin-bottom: clamp(40px, 5vw, 64px); }
 .frase { height: clamp(64px, 8.4vw, 112px); width: auto; max-width: 100%; }
+.reparto {
+  margin-top: 18px; display: inline-flex; align-items: center; gap: 12px;
+  background: var(--azul); color: var(--blanco); border-radius: 999px; padding: 12px 22px 12px 18px;
+  font-size: var(--t-cuerpo); line-height: 1.35;
+}
+.reparto svg { flex: none; }
 .seccion-titulo__bajada { margin-top: 18px; font-size: var(--t-destacado); line-height: 1.45; max-width: 46ch; }
 
 /* ---------- Catálogo: cada pizza es su etiqueta ---------- */
