@@ -455,3 +455,174 @@ button, input, textarea { font: inherit; color: inherit; }
   *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
   .js [data-entra].espera { opacity: 1; transform: none; }
 }
+
+/* =========================================================
+   CAPA DE VIDA (21-oct-2026)
+   Fondos que respiran, personalidad y detalles estilo Apple.
+   Reglas: sólo transform/opacity/clip-path (van por la GPU), sólo
+   tonos de la marca (blanco y azul con transparencia), y todo se
+   apaga con "movimiento reducido" (ver el @media del final) o cuando
+   la sección no está en pantalla (clase .fuera, la pone app.js).
+   ========================================================= */
+:root { --t-ambiente: 28s; }   /* ritmo de las luces de fondo: lento, casi imperceptible */
+
+/* Grano fino sobre toda la página: rompe lo plano del color pleno sin cambiarlo */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 1000; pointer-events: none; opacity: .045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ---------- Portada: luces que se mueven detrás del texto, foto que respira ---------- */
+.portada__luces { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.portada__luces::before, .portada__luces::after {
+  content: ""; position: absolute; border-radius: 50%; will-change: transform;
+}
+.portada__luces::before {
+  width: 60vmax; height: 60vmax; left: -22vmax; top: -24vmax;
+  background: radial-gradient(circle, rgba(255, 255, 255, .11) 0%, rgba(255, 255, 255, 0) 60%);
+  animation: luz-a var(--t-ambiente) ease-in-out infinite alternate;
+}
+.portada__luces::after {
+  width: 52vmax; height: 52vmax; left: 6vmax; bottom: -34vmax;
+  background: radial-gradient(circle, var(--azul-medio) 0%, rgba(42, 63, 98, 0) 62%);
+  animation: luz-b calc(var(--t-ambiente) * 1.35) ease-in-out infinite alternate;
+}
+@keyframes luz-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(14vmax, 9vmax, 0) scale(1.18); } }
+@keyframes luz-b { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-9vmax, -11vmax, 0) scale(1.12); } }
+.portada__foto { z-index: 1; }   /* la foto queda por encima de las luces */
+/* La foto entra desde el horno y después respira muy despacio (Ken Burns) */
+.js .portada__foto img { animation: horno 1600ms var(--ease-soft) both, respirar 26s ease-in-out 1600ms infinite alternate; }
+@keyframes respirar { from { transform: scale(1); } to { transform: scale(1.06); } }
+/* "PIZZA" llega con las letras abriéndose hasta su lugar */
+.js .portada__firma span { animation: subir 480ms var(--ease-out) 180ms both, abrir-letras 1100ms var(--ease-out) 180ms both; }
+@keyframes abrir-letras { from { letter-spacing: .34em; } to { letter-spacing: .08em; } }
+/* El texto de la portada se queda un poco atrás al hacer scroll (lo mueve app.js) */
+.portada__texto { will-change: transform, opacity; }
+
+/* Sello giratorio al lado del botón */
+.sello-giro {
+  width: 104px; height: 104px; margin-left: 10px; color: var(--blanco);
+  font-weight: 700; font-size: 11.5px; letter-spacing: .12em; fill: currentColor;
+  animation: girar 30s linear infinite; will-change: transform;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ---------- Cinta de frases ---------- */
+.cinta {
+  position: relative; overflow: hidden; background: var(--azul-hondo); color: var(--blanco-80);
+  padding: 15px 0; font-weight: 700; font-size: var(--t-chico); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.cinta--clara { background: var(--azul-06); color: var(--azul-70); }
+.cinta__pista { display: inline-flex; width: max-content; animation: cinta 44s linear infinite; will-change: transform; }
+.cinta--clara .cinta__pista { animation-duration: 52s; animation-direction: reverse; }
+.cinta span { display: inline-flex; align-items: center; gap: 26px; padding: 0 13px; }
+.cinta span::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .55; }
+@keyframes cinta { to { transform: translate3d(-50%, 0, 0); } }
+@media (hover: hover) and (pointer: fine) { .cinta:hover .cinta__pista { animation-play-state: paused; } }
+
+/* ---------- Catálogo: luz que se desplaza detrás de las fichas, foco bajo el cursor ---------- */
+.catalogo { position: relative; overflow: hidden; isolation: isolate; }
+.catalogo::before, .catalogo::after { content: ""; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; will-change: transform; }
+.catalogo::before {
+  width: 72vmax; height: 72vmax; right: -34vmax; top: -22vmax;
+  background: radial-gradient(circle, var(--azul-08) 0%, rgba(231, 234, 240, 0) 60%);
+  animation: luz-b calc(var(--t-ambiente) * 1.2) ease-in-out infinite alternate;
+}
+.catalogo::after {
+  width: 56vmax; height: 56vmax; left: -28vmax; bottom: -14vmax;
+  background: radial-gradient(circle, var(--azul-08) 0%, rgba(231, 234, 240, 0) 60%);
+  animation: luz-a calc(var(--t-ambiente) * .9) ease-in-out infinite alternate;
+}
+/* El punto del chip de reparto late, como un "estamos" */
+.reparto::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--blanco); flex: none; animation: latir 2.6s ease-in-out infinite; }
+@keyframes latir { 0%, 100% { opacity: .45; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+/* Frases manuscritas: se escriben de izquierda a derecha al entrar, como la firma */
+.js .seccion-titulo .frase { clip-path: inset(-20% 0 -20% 0); transition: clip-path 1000ms var(--ease-out) 120ms; }
+.js .seccion-titulo.espera .frase { clip-path: inset(-20% 100% -20% 0); }
+/* Ficha: se levanta apenas y un foco blanco sigue al cursor (sólo con mouse) */
+.pizza { position: relative; isolation: isolate; transition: background-color var(--t-hover) ease, transform var(--t-ui) var(--ease-out), box-shadow var(--t-ui) ease; }
+.pizza__foto, .pizza__cuerpo { position: relative; z-index: 1; }
+.pizza::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 62%);
+  transition: opacity var(--t-ui) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pizza:hover { transform: translateY(-4px); box-shadow: 0 24px 48px -24px rgba(29, 46, 74, .4); } /* taste-skill-ignore: sombra del mismo azul, la ficha se levanta */
+  .pizza:hover::after { opacity: 1; }
+}
+.pizza__agregar { transition: background-color var(--t-hover) ease, transform var(--t-press) var(--ease-out), color var(--t-hover) ease; }
+/* La pizza que vuela hasta el botón del pedido (la crea app.js) */
+.vuelo { position: fixed; z-index: 70; pointer-events: none; border-radius: var(--radio-catalogo); overflow: hidden; background: var(--azul); will-change: transform, opacity; }
+.vuelo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vuelo .pizza__marca { position: absolute; left: 18%; top: 50%; width: 64%; height: auto; transform: translateY(-50%); }
+.vuelo .pizza__sello { display: none; }
+
+/* ---------- Preparación: chispas que suben del horno, números grandes en los pasos ---------- */
+.preparacion { position: relative; overflow: hidden; }
+.chispas { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.chispa {
+  position: absolute; bottom: -12px; left: var(--x, 50%); width: var(--s, 5px); height: var(--s, 5px); border-radius: 50%;
+  background: var(--blanco); opacity: 0; will-change: transform, opacity;
+  animation: chispa var(--d, 11s) linear var(--r, 0s) infinite;
+}
+@keyframes chispa {
+  0%   { transform: translate3d(0, 0, 0) scale(.5); opacity: 0; }
+  12%  { opacity: var(--o, .5); }
+  70%  { opacity: var(--o, .5); }
+  100% { transform: translate3d(var(--dx, 24px), calc(-1 * var(--h, 900px)), 0) scale(1.1); opacity: 0; }
+}
+.preparacion__in { position: relative; }
+.preparacion__video { box-shadow: 0 30px 70px -30px rgba(10, 18, 32, .7); } /* taste-skill-ignore: el video se despega del fondo */
+.pasos { counter-reset: paso; }
+.pasos li { position: relative; overflow: hidden; counter-increment: paso; transition: background-color var(--t-hover) ease; }
+.pasos li::before {
+  content: "0" counter(paso); position: absolute; right: 16px; top: -10px; pointer-events: none;
+  font-weight: 700; font-size: 84px; line-height: 1; letter-spacing: -.05em; color: rgba(255, 255, 255, .12);
+}
+@media (hover: hover) and (pointer: fine) { .pasos li:hover { background: rgba(255, 255, 255, .16); } }
+
+/* ---------- Galería: las fotos se desplazan a distinto ritmo con el scroll (si el navegador sabe) ---------- */
+@supports (animation-timeline: view()) {
+  .js .galeria__fotos .g1 { animation: flotar-1 linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  .js .galeria__fotos .g2 { animation: flotar-2 linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  .js .galeria__fotos .g3 { animation: flotar-3 linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+}
+@keyframes flotar-1 { from { transform: translate3d(0, 18px, 0); } to { transform: translate3d(0, -18px, 0); } }
+@keyframes flotar-2 { from { transform: translate3d(0, 56px, 0); } to { transform: translate3d(0, -56px, 0); } }
+@keyframes flotar-3 { from { transform: translate3d(0, 30px, 0); } to { transform: translate3d(0, -30px, 0); } }
+
+/* ---------- Contacto y pie ---------- */
+.canal { transition: background-color var(--t-hover) ease, color var(--t-hover) ease, transform var(--t-ui) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) { .canal:hover { transform: translateX(6px); } }
+.pie { position: relative; overflow: hidden; }
+.pie::before {
+  content: ""; position: absolute; left: 50%; top: 34%; width: 90vmax; height: 46vmax; transform: translate(-50%, -50%); pointer-events: none;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, .1) 0%, rgba(255, 255, 255, 0) 60%);
+  animation: aliento 10s ease-in-out infinite alternate; will-change: transform, opacity;
+}
+@keyframes aliento { from { transform: translate(-50%, -50%) scale(.92); opacity: .7; } to { transform: translate(-50%, -50%) scale(1.08); opacity: 1; } }
+
+/* ---------- Barra: borde de luz arriba, como material ---------- */
+.barra::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.22), rgba(255,255,255,0)); pointer-events: none; }
+
+/* Las secciones fuera de pantalla no gastan: app.js les pone .fuera */
+.fuera, .fuera *, .fuera::before, .fuera::after { animation-play-state: paused !important; }
+
+/* Celular: menos capas */
+@media (max-width: 600px) {
+  .sello-giro { display: none; }   /* abajo del botón quedaba solo y lo tapaba el botón flotante del pedido */
+  .pasos li::before { font-size: 64px; right: 12px; top: -6px; }
+  .cinta { padding: 12px 0; }
+}
+
+/* Movimiento reducido: todo lo ambiental se queda quieto, las frases quedan a la vista */
+@media (prefers-reduced-motion: reduce) {
+  body::after, .portada__luces, .chispas, .pie::before, .catalogo::before, .catalogo::after { display: none; }
+  .cinta__pista { animation: none; }
+  .js .seccion-titulo .frase { clip-path: none; transition: none; }
+  .js .portada__firma span { letter-spacing: .08em; }
+}

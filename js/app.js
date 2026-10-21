@@ -111,7 +111,7 @@
       confirmarBoton(ev.target.closest("[data-agregar]"));
       avisar(seleccion[id] + " × " + porId(id).nombre + " al pedido");
       seleccion[id] = 1;
-      saltarContador();
+      volar(tarjeta); // la foto vuela hasta el botón del pedido y, al llegar, salta el contador
     }
     salida.textContent = seleccion[id];
   });
@@ -380,6 +380,7 @@
 
   pintarCatalogo();
   pintarTodo();
+  prepararVida();
   // Se mide después de la carga, cuando el navegador ya saltó a un #enlace
   if (document.readyState === "complete") requestAnimationFrame(prepararEntradas);
   else window.addEventListener("load", function () { requestAnimationFrame(prepararEntradas); });
@@ -415,6 +416,84 @@
     }
     function alScroll() { if (!pendiente) { pendiente = true; requestAnimationFrame(revisar); setTimeout(revisar, 200); } }
     window.addEventListener("scroll", alScroll, { passive: true });
+  }
+
+  /* ---------- Capa de vida (21-oct-2026) ---------- */
+  var QUIETO = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var MOUSE = window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  /* La foto de la pizza vuela desde la ficha hasta el botón del pedido (WAAPI: arranca donde está la ficha) */
+  function volar(tarjeta) {
+    var foto = $(".pizza__foto", tarjeta);
+    var celular = window.matchMedia("(max-width: 600px)").matches;
+    var destino = celular && !flotante.hidden ? flotante : $(".btn-carrito");
+    if (QUIETO || !foto || !destino || !foto.animate) { saltarContador(); return; }
+    var a = foto.getBoundingClientRect(), b = destino.getBoundingClientRect();
+    var g = foto.cloneNode(true);
+    g.className = "vuelo";
+    g.style.left = a.left + "px"; g.style.top = a.top + "px"; g.style.width = a.width + "px"; g.style.height = a.height + "px";
+    document.body.appendChild(g);
+    var dx = (b.left + b.width / 2) - (a.left + a.width / 2);
+    var dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    var anim = g.animate(
+      [{ transform: "translate3d(0,0,0) scale(1)", opacity: 1 },
+       { transform: "translate3d(" + dx + "px," + dy + "px,0) scale(.06)", opacity: .35 }],
+      { duration: 620, easing: "cubic-bezier(.77, 0, .175, 1)", fill: "forwards" }
+    );
+    anim.onfinish = function () { g.remove(); saltarContador(); };
+  }
+
+  function prepararVida() {
+    if (QUIETO) return;
+
+    /* Chispas del horno: puntitos blancos que suben despacio por la sección de preparación */
+    var nido = $("[data-chispas]");
+    if (nido && !(navigator.connection && navigator.connection.saveData)) {
+      var alto = function () { nido.style.setProperty("--h", nido.offsetHeight + 60 + "px"); };
+      alto(); window.addEventListener("resize", alto, { passive: true });
+      var n = window.innerWidth < 600 ? 10 : 18, html = "";
+      for (var i = 0; i < n; i++) {
+        var d = 9 + Math.random() * 8;
+        html += '<i class="chispa" style="--x:' + (3 + Math.random() * 94).toFixed(1) + '%;--s:' + (3 + Math.random() * 4).toFixed(1) + 'px;--o:' +
+                (.25 + Math.random() * .4).toFixed(2) + ';--d:' + d.toFixed(1) + 's;--r:-' + (Math.random() * d).toFixed(1) + 's;--dx:' + ((Math.random() - .5) * 90).toFixed(0) + 'px"></i>';
+      }
+      nido.innerHTML = html;
+    }
+
+    /* El texto de la portada se queda atrás y se apaga al bajar (solo con mouse: en el celular el scroll manda) */
+    var texto = $(".portada__texto"), portada = $(".portada");
+    if (MOUSE && texto && portada) {
+      var pend = false;
+      var mover = function () {
+        pend = false;
+        var y = window.scrollY, h = portada.offsetHeight;
+        if (y > h) { texto.style.transform = ""; texto.style.opacity = ""; return; }
+        texto.style.transform = "translate3d(0," + (y * .22).toFixed(1) + "px,0)";
+        texto.style.opacity = Math.max(0, 1 - y / (h * .85)).toFixed(3);
+      };
+      window.addEventListener("scroll", function () { if (!pend) { pend = true; requestAnimationFrame(mover); } }, { passive: true });
+      mover();
+    }
+
+    /* Foco blanco que sigue al cursor dentro de cada ficha */
+    if (MOUSE && grilla) {
+      grilla.addEventListener("pointermove", function (ev) {
+        var ficha = ev.target.closest(".pizza");
+        if (!ficha) return;
+        var r = ficha.getBoundingClientRect();
+        ficha.style.setProperty("--mx", (ev.clientX - r.left).toFixed(0) + "px");
+        ficha.style.setProperty("--my", (ev.clientY - r.top).toFixed(0) + "px");
+      }, { passive: true });
+    }
+
+    /* Lo que no está en pantalla deja de animarse (ahorra batería) */
+    if ("IntersectionObserver" in window) {
+      var vivas = $$(".portada, .catalogo, .preparacion, .pie, .cinta");
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { e.target.classList.toggle("fuera", !e.isIntersecting); });
+      }, { rootMargin: "120px 0px" });
+      vivas.forEach(function (el) { io.observe(el); });
+    }
   }
 
   /* El video del horno no se descarga hasta acercarse, corre solo cuando se ve y nunca con movimiento reducido */

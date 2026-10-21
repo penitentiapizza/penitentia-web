@@ -86,6 +86,7 @@
   <main>
     <!-- PORTADA -->
     <section class="portada" id="inicio">
+      <div class="portada__luces" aria-hidden="true"></div>
       <div class="portada__texto">
         <h1 class="portada__firma">
           <img src="img/firma-blanco.svg" alt="Penitentia" width="683" height="205">
@@ -95,12 +96,26 @@
         <p class="portada__bajada">Masa casera con prefermento, armada a mano y congelada. Elegí tus sabores y mandanos el pedido por WhatsApp.</p>
         <div class="portada__acciones">
           <a class="btn btn--blanco" href="#catalogo">Armá tu pedido</a>
+          <!-- Sello que gira despacio, como el de una etiqueta -->
+          <svg class="sello-giro" viewBox="0 0 160 160" aria-hidden="true">
+            <defs><path id="sello-circulo" d="M80,80 m-58,0 a58,58 0 1,1 116,0 a58,58 0 1,1 -116,0"/></defs>
+            <text><textPath href="#sello-circulo" textLength="362" lengthAdjust="spacing">HECHA A MANO · A LA PIEDRA · CONGELADA ·</textPath></text>
+            <circle cx="80" cy="80" r="7" fill="currentColor"/>
+          </svg>
         </div>
       </div>
       <figure class="portada__foto">
         <img src="img/hero-1120.webp" srcset="img/hero-640.webp 640w, img/hero-1120.webp 1120w" sizes="(max-width: 900px) 100vw, 54vw" alt="Pizza Penitentia entrando al horno a la piedra" width="1120" height="1148" fetchpriority="high" decoding="async">
       </figure>
     </section>
+
+    <!-- Cinta con lo que define a la pizza: pasa despacio, se frena al apoyar el cursor -->
+    <div class="cinta" aria-hidden="true">
+      <div class="cinta__pista">
+        <span>Masa casera</span><span>Con prefermento</span><span>Armada a mano</span><span>A la piedra</span><span>Congelada</span><span>Del freezer al horno</span><span>Reparto los viernes</span><span>Mendoza</span>
+        <span>Masa casera</span><span>Con prefermento</span><span>Armada a mano</span><span>A la piedra</span><span>Congelada</span><span>Del freezer al horno</span><span>Reparto los viernes</span><span>Mendoza</span>
+      </div>
+    </div>
 
     <!-- CATÁLOGO: cada pizza se presenta como su etiqueta de freezer (cuaderno de marca, formato 4:1) -->
     <section class="catalogo" id="catalogo" aria-labelledby="titulo-catalogo">
@@ -120,6 +135,7 @@
 
     <!-- PREPARACIÓN -->
     <section class="preparacion" id="preparacion" aria-labelledby="titulo-prep">
+      <div class="chispas" aria-hidden="true" data-chispas></div>
       <div class="contenedor preparacion__in">
         <figure class="preparacion__video" data-entra>
           <video data-src="video/horno.mp4" poster="video/horno-poster.webp" muted loop playsinline preload="none" aria-label="Pizza Penitentia cocinándose en el horno" width="540" height="960"></video>
@@ -161,6 +177,13 @@
         </div>
       </div>
     </section>
+
+    <div class="cinta cinta--clara" aria-hidden="true">
+      <div class="cinta__pista">
+        <span>Por mayor y por menor</span><span>Pedidos por WhatsApp</span><span>Elegí tu sabor</span><span>Sale una Penitentia</span><span>Pizza a la piedra</span><span>Mendoza</span>
+        <span>Por mayor y por menor</span><span>Pedidos por WhatsApp</span><span>Elegí tu sabor</span><span>Sale una Penitentia</span><span>Pizza a la piedra</span><span>Mendoza</span>
+      </div>
+    </div>
 
     <!-- CONTACTO -->
     <section class="contacto" id="contacto" aria-labelledby="titulo-contacto">

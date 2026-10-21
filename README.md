@@ -8,6 +8,27 @@ Sitio estático (HTML + CSS + JS, sin dependencias) para **penitentia.com.ar**, 
 - Para Google y redes: `robots.txt`, `sitemap.xml`, datos estructurados (LocalBusiness) en `index.html`, imagen de vista previa `img/og.jpg` (1200 × 630) y una página `404.html` con la marca.
 - Colores y tipografía según el Cuaderno de Marca v8: azul `#1D2E4A`, blanco, Brush Script MT para la firma y frases, Arial Bold / Regular para la información.
 
+## Capa de vida (movimiento y personalidad)
+
+Desde el 21-oct-2026 la página tiene una capa de movimiento encima del diseño original. **No cambia tipografía ni colores**: todo usa blanco y azul con transparencia. Está al final de `css/styles.css` (bloque «CAPA DE VIDA») y en `app.js` (`prepararVida` y `volar`).
+
+| Qué | Dónde | Cómo apagarlo |
+|-----|-------|---------------|
+| Grano fino sobre toda la página | `body::after` | borrar esa regla |
+| Luces que se mueven detrás del texto de la portada y detrás del catálogo | `.portada__luces`, `.catalogo::before/::after` | borrar el `<div class="portada__luces">` o las reglas |
+| Foto de portada que respira (Ken Burns) y «PIZZA» que abre sus letras al cargar | `respirar`, `abrir-letras` | quitar esas animaciones de `.portada__foto img` / `.portada__firma span` |
+| Sello giratorio «Hecha a mano · A la piedra · Congelada» | `<svg class="sello-giro">` en la portada | borrar el svg |
+| Cintas con frases (una oscura bajo la portada, una clara antes del contacto) | `<div class="cinta">` | borrar los divs; el texto se edita ahí (está duplicado a propósito para que el bucle no se corte) |
+| Frases manuscritas que se «escriben» al entrar | `.seccion-titulo .frase` | quitar las dos reglas con `clip-path` |
+| Fichas que se levantan con un foco blanco que sigue al mouse | `.pizza:hover`, `--mx/--my` desde `app.js` | quitar el bloque `@media (hover: hover) and (pointer: fine)` de `.pizza` |
+| La foto de la pizza vuela hasta el botón del pedido al agregar | `volar()` en `app.js` | reemplazar `volar(tarjeta)` por `saltarContador()` |
+| Chispas que suben en «A la piedra» | `<div class="chispas">` + `prepararVida` | borrar el div |
+| Números 01/02/03 en los pasos | `.pasos li::before` | borrar la regla |
+| Fotos de la galería a distinto ritmo con el scroll | `@supports (animation-timeline: view())` | sólo en navegadores que lo soportan; borrar el bloque |
+| Texto de la portada que se queda atrás al hacer scroll | `prepararVida` (sólo con mouse) | borrar ese bloque |
+
+Reglas que respeta: con **«Reducir movimiento»** activado en el sistema todo lo ambiental se apaga (`@media (prefers-reduced-motion)`); las secciones que no están en pantalla se pausan (clase `.fuera`); en modo ahorro de datos no se crean las chispas; sólo se animan `transform`, `opacity` y `clip-path`.
+
 ## Cambiar precios o variedades
 
 Editá **`js/productos.js`**. Cada pizza tiene nombre, descripción, precio (número sin puntos) y foto. Poné `disponible: false` para marcarla "Sin stock".
