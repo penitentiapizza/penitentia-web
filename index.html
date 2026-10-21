@@ -35,12 +35,21 @@
         <a href="#preparacion">Cómo se prepara</a>
         <a href="#contacto">Contacto</a>
       </nav>
+      <button class="btn-menu" type="button" data-menu-boton aria-controls="menu-movil" aria-expanded="false" aria-label="Abrir menú">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="l1" d="M4 7h16"/><path class="l2" d="M4 12h16"/><path class="l3" d="M4 17h16"/></svg>
+        <span>Menú</span>
+      </button>
       <button class="btn-carrito" type="button" data-abrir-carrito aria-controls="carrito" aria-expanded="false">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg>
         <span>Pedido</span>
         <span class="contador" data-contador aria-live="polite">0</span>
       </button>
     </div>
+    <nav class="menu-movil" id="menu-movil" aria-label="Principal" data-menu hidden>
+      <a href="#catalogo">Catálogo</a>
+      <a href="#preparacion">Cómo se prepara</a>
+      <a href="#contacto">Contacto</a>
+    </nav>
   </header>
 
   <main>
@@ -70,7 +79,7 @@
           <p class="seccion-titulo__bajada">Sumá las que quieras al pedido. Cuando estés, lo mandás por WhatsApp y coordinamos la entrega.</p>
           <p class="reparto">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
-            <span>Repartimos los <strong data-dia-reparto>viernes</strong>. Pedí antes y te llega ese día.</span>
+            <span><strong>Reparto:</strong> el día <strong data-dia-reparto>viernes</strong></span>
           </p>
         </header>
         <div class="grilla" id="grilla" aria-live="polite"></div>
@@ -194,7 +203,7 @@
         <fieldset class="entrega">
           <legend>¿Cómo lo recibís?</legend>
           <label class="opcion"><input type="radio" name="entrega" value="Retiro" checked> <span>Retiro en domicilio <small>Sin cargo</small></span></label>
-          <label class="opcion"><input type="radio" name="entrega" value="Envío"> <span>Envío a domicilio <small><span data-costo-envio>$ 4.000</span> · Reparto el <span data-dia-reparto>viernes</span></small></span></label>
+          <label class="opcion"><input type="radio" name="entrega" value="Envío"> <span>Envío a domicilio <small><span data-costo-envio>$ 4.000</span> · Reparto: el día <span data-dia-reparto>viernes</span></small></span></label>
         </fieldset>
         <label data-campo-direccion hidden>Dirección
           <input type="text" name="direccion" autocomplete="street-address" placeholder="Calle, número y departamento">

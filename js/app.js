@@ -306,7 +306,7 @@
     lineas.push("Envío: " + (entrega === "Envío" ? pesos(ENVIO) : "sin cargo (retiro)"));
     lineas.push("Total: " + pesos(total()), "");
     lineas.push("Nombre: " + nombre);
-    lineas.push("Entrega: " + (entrega === "Envío" ? "Envío a domicilio (reparto del " + DIA_REPARTO + ") — " + direccion : "Retiro en domicilio"));
+    lineas.push("Entrega: " + (entrega === "Envío" ? "Envío a domicilio (Reparto: el día " + DIA_REPARTO + ") — " + direccion : "Retiro en domicilio"));
     if (notas) lineas.push("Comentarios: " + notas);
 
     window.open(enlaceWa(lineas.join("\n")), "_blank", "noopener");
@@ -357,6 +357,22 @@
   $$("[data-mail]").forEach(function (a) { a.href = "mailto:" + CONTACTO.email + "?subject=" + encodeURIComponent("Consulta desde la web"); });
   $$("[data-ig]").forEach(function (a) { a.href = "https://www.instagram.com/" + CONTACTO.instagram + "/"; });
   $$("[data-anio]").forEach(function (el) { el.textContent = new Date().getFullYear(); });
+
+  /* Menú del celular: se despliega desde la barra y se cierra al elegir, al tocar afuera o con Escape */
+  (function () {
+    var boton = $("[data-menu-boton]"), menu = $("[data-menu]");
+    if (!boton || !menu) return;
+    function abrirMenu(si) {
+      boton.setAttribute("aria-expanded", si ? "true" : "false");
+      boton.setAttribute("aria-label", si ? "Cerrar menú" : "Abrir menú");
+      if (si) { menu.hidden = false; requestAnimationFrame(function () { menu.classList.add("abierto"); }); }
+      else { menu.classList.remove("abierto"); setTimeout(function () { if (!menu.classList.contains("abierto")) menu.hidden = true; }, 260); }
+    }
+    boton.addEventListener("click", function () { abrirMenu(boton.getAttribute("aria-expanded") !== "true"); });
+    menu.addEventListener("click", function (ev) { if (ev.target.closest("a")) abrirMenu(false); });
+    document.addEventListener("click", function (ev) { if (!ev.target.closest("#barra") && boton.getAttribute("aria-expanded") === "true") abrirMenu(false); });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && boton.getAttribute("aria-expanded") === "true") { abrirMenu(false); boton.focus(); } });
+  })();
 
   /* Sombra de la barra al bajar */
   var barra = $("#barra");
