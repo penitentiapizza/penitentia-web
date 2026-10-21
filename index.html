@@ -2,6 +2,8 @@
 <html lang="es-AR">
 <head>
   <meta charset="utf-8">
+  <!-- Si alguien entra por http://, lo pasamos a https:// (el tilde "Enforce HTTPS" de GitHub Pages sólo lo puede poner un admin del repo) -->
+  <script>if (location.protocol === "http:" && /penitentia\.com\.ar$/.test(location.hostname)) location.replace("https://penitentia.com.ar" + location.pathname + location.search + location.hash)</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Penitentia Pizza · Pizzas congeladas a la piedra</title>
   <meta name="description" content="Pizzas congeladas a la piedra de Penitentia. Elegí tu sabor, armá tu pedido y mandalo por WhatsApp. Mendoza, Argentina.">
