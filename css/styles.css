@@ -91,16 +91,33 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn--wa:active { transform: scale(.985); }
 
 /* ---------- Barra superior ---------- */
-.barra {
-  position: sticky; top: 0; z-index: 30; color: var(--blanco); transition: box-shadow var(--t-ui) ease;
+/* La barra está fija y no tiene fondo: el fondo lo lleva .barra__in, que arriba ocupa todo el
+   ancho y, al bajar 48 px, se comprime en una píldora centrada del ancho justo de su contenido
+   (app.js mide ese ancho con una copia invisible, .barra__fantasma, y lo deja en --pill-ancho). */
+.barra { position: fixed; top: 0; left: 0; right: 0; z-index: 30; color: var(--blanco); pointer-events: none; padding-top: env(safe-area-inset-top); }
+:root { --ease-barra: cubic-bezier(.45, 0, .55, 1); --t-barra: 600ms; }
+.barra__in {
+  pointer-events: auto; position: relative; box-sizing: border-box;
+  width: 100%; margin: 0 auto; min-height: var(--barra-alto);
+  display: flex; align-items: center; gap: 32px;
+  padding: 0 max(var(--gutter), calc((100vw - var(--ancho)) / 2 + var(--gutter)), env(safe-area-inset-right)) 0 max(var(--gutter), calc((100vw - var(--ancho)) / 2 + var(--gutter)), env(safe-area-inset-left));
+  border-radius: 0; border: 1px solid transparent;
   background: rgba(29, 46, 74, .88); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); /* taste-skill-ignore: material translúcido estilo Apple, pedido explícito */
-  padding-top: env(safe-area-inset-top);
+  transition: width var(--t-barra) var(--ease-barra), margin-top var(--t-barra) var(--ease-barra), min-height var(--t-barra) var(--ease-barra),
+              padding var(--t-barra) var(--ease-barra), gap var(--t-barra) var(--ease-barra), border-radius var(--t-barra) var(--ease-barra),
+              background-color var(--t-barra) var(--ease-barra), border-color var(--t-barra) var(--ease-barra), box-shadow var(--t-barra) var(--ease-barra);
 }
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .barra { background: var(--azul); } }
-@media (prefers-reduced-transparency: reduce) { .barra { background: var(--azul); -webkit-backdrop-filter: none; backdrop-filter: none; } }
-.barra.con-sombra { box-shadow: 0 6px 24px rgba(10, 18, 32, .25); } /* taste-skill-ignore: barra fija que flota sobre el contenido */
-.barra__in { max-width: var(--ancho); margin: 0 auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); height: var(--barra-alto); display: flex; align-items: center; gap: 32px; }
-.barra__logo img { height: 48px; width: auto; }
+.barra__in.compacta, .barra__fantasma {
+  width: var(--pill-ancho, auto); margin-top: 14px; min-height: 60px; gap: 22px;
+  padding: 0 8px 0 20px; border-radius: 999px;
+  background: rgba(29, 46, 74, .82); border-color: rgba(255, 255, 255, .14);
+  box-shadow: 0 18px 44px -16px rgba(10, 18, 32, .55); /* taste-skill-ignore: la píldora flota sobre el contenido */
+}
+.barra__fantasma { position: absolute; top: 0; left: 0; width: max-content; visibility: hidden; pointer-events: none; transition: none; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .barra__in { background: var(--azul); } }
+@media (prefers-reduced-transparency: reduce) { .barra__in { background: var(--azul); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+.barra__logo img { height: 48px; width: auto; transition: height var(--t-barra) var(--ease-barra); }
+.barra__in.compacta .barra__logo img, .barra__fantasma .barra__logo img { height: 38px; }
 .barra__nav { display: flex; gap: 30px; margin-left: auto; }
 .barra__nav a {
   position: relative; text-decoration: none; font-weight: 700; font-size: 15px; color: var(--blanco-80);
@@ -122,7 +139,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .btn-menu[aria-expanded="true"] .l2 { opacity: 0; }
 .btn-menu[aria-expanded="true"] .l3 { transform: translateY(-5px) rotate(-45deg); }
 .menu-movil {
-  position: absolute; top: 100%; left: 0; right: 0;
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0; border-radius: 18px;
   background: rgba(29, 46, 74, .96); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); /* taste-skill-ignore: menú flotante */
   box-shadow: 0 18px 30px rgba(10, 18, 32, .3); /* taste-skill-ignore: menú flotante */
   display: grid; gap: 4px; padding: 6px var(--gutter) 18px;
@@ -158,8 +175,6 @@ button, input, textarea { font: inherit; color: inherit; }
   position: relative; background: var(--azul); color: var(--blanco);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   min-height: min(100svh, 892px); overflow: hidden;
-  /* La portada pasa por debajo de la barra translúcida */
-  margin-top: calc(-1 * (var(--barra-alto) + env(safe-area-inset-top)));
 }
 .portada__texto {
   padding: calc(var(--barra-alto) + clamp(40px, 6vw, 88px)) var(--gutter) clamp(48px, 7vw, 100px);
@@ -422,6 +437,8 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 @media (max-width: 600px) {
   :root { --barra-alto: 64px; }
+  .barra__in.compacta, .barra__fantasma { margin-top: 10px; min-height: 54px; gap: 10px; padding: 0 6px 0 14px; }
+  .barra__in.compacta .barra__logo img, .barra__fantasma .barra__logo img { height: 34px; }
   .pizza__pie { gap: 10px; }
   .pizza__agregar { flex: 1 1 auto; }
   body { font-size: 16px; }
@@ -607,7 +624,7 @@ body::after {
 @keyframes aliento { from { transform: translate(-50%, -50%) scale(.92); opacity: .7; } to { transform: translate(-50%, -50%) scale(1.08); opacity: 1; } }
 
 /* ---------- Barra: borde de luz arriba, como material ---------- */
-.barra::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.22), rgba(255,255,255,0)); pointer-events: none; }
+.barra__in:not(.compacta)::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.22), rgba(255,255,255,0)); pointer-events: none; }
 
 /* Las secciones fuera de pantalla no gastan: app.js les pone .fuera */
 .fuera, .fuera *, .fuera::before, .fuera::after { animation-play-state: paused !important; }

@@ -15,6 +15,7 @@ Desde el 21-oct-2026 la página tiene una capa de movimiento encima del diseño 
 | Qué | Dónde | Cómo apagarlo |
 |-----|-------|---------------|
 | Grano fino sobre toda la página | `body::after` | borrar esa regla |
+| Barra que se comprime: arriba ocupa todo el ancho y al bajar 48 px se vuelve una píldora centrada del ancho justo de su contenido (vuelve al subir a 24 px) | `.barra__in` / `.compacta` en CSS; la medición con `.barra__fantasma` está en `app.js` | quitar el bloque «Barra que se comprime» de `app.js` (queda la barra ancha fija) |
 | Luces que se mueven detrás del texto de la portada y detrás del catálogo | `.portada__luces`, `.catalogo::before/::after` | borrar el `<div class="portada__luces">` o las reglas |
 | Foto de portada que respira (Ken Burns) y «PIZZA» que abre sus letras al cargar | `respirar`, `abrir-letras` | quitar esas animaciones de `.portada__foto img` / `.portada__firma span` |
 | Sello giratorio «Hecha a mano · A la piedra · Congelada» | `<svg class="sello-giro">` en la portada | borrar el svg |

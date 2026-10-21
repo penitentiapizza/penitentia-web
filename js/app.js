@@ -374,9 +374,35 @@
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && boton.getAttribute("aria-expanded") === "true") { abrirMenu(false); boton.focus(); } });
   })();
 
-  /* Sombra de la barra al bajar */
-  var barra = $("#barra");
-  window.addEventListener("scroll", function () { barra.classList.toggle("con-sombra", window.scrollY > 8); }, { passive: true });
+  /* Barra que se comprime: pasa de ancha a píldora centrada al bajar 48 px (y vuelve al subir a 24 px).
+     Como un ancho "fit-content" no se puede animar, una copia invisible con la misma ropa (.barra__fantasma)
+     mide cuánto ocupa el contenido comprimido y ese número va a --pill-ancho. */
+  var barra = $("#barra"), barraIn = $(".barra__in", barra);
+  (function () {
+    var fantasma = barraIn.cloneNode(true);
+    fantasma.className = "barra__in barra__fantasma";
+    fantasma.setAttribute("aria-hidden", "true");
+    $$("*", fantasma).forEach(function (el) {
+      Array.prototype.slice.call(el.attributes).forEach(function (at) { if (/^(id|data-|aria-)/.test(at.name)) el.removeAttribute(at.name); });
+      el.tabIndex = -1;
+    });
+    var menu = $(".menu-movil", fantasma); if (menu) menu.remove();
+    barra.appendChild(fantasma);
+    function medir() { barraIn.style.setProperty("--pill-ancho", Math.ceil(fantasma.getBoundingClientRect().width) + "px"); }
+    medir();
+    if ("ResizeObserver" in window) new ResizeObserver(medir).observe(fantasma);
+    else window.addEventListener("resize", medir, { passive: true });
+
+    var compacta = false, pend = false;
+    function revisar() {
+      pend = false;
+      var y = window.scrollY;
+      if (!compacta && y >= 48) { compacta = true; barraIn.classList.add("compacta"); }
+      else if (compacta && y <= 24) { compacta = false; barraIn.classList.remove("compacta"); }
+    }
+    window.addEventListener("scroll", function () { if (!pend) { pend = true; requestAnimationFrame(revisar); } }, { passive: true });
+    revisar();
+  })();
 
   pintarCatalogo();
   pintarTodo();
