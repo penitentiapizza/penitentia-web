@@ -61,7 +61,7 @@
   function pintarCatalogo() {
     grilla.innerHTML = PRODUCTOS.map(function (p) {
       var hay = p.disponible !== false;
-      var conPrecio = vendible(p) || (!hay && typeof p.precio === "number");
+      var conPrecio = typeof p.precio === "number" && p.precio > 0; // sin precio: "Consultá el precio" (nunca "$ 0")
       seleccion[p.id] = seleccion[p.id] || 1;
       // Sin foto: la etiqueta azul de Penitentia, como la del freezer
       var foto = p.foto
@@ -73,7 +73,7 @@
               '<a class="pizza__agregar pizza__consultar" target="_blank" rel="noopener" href="' +
                 enlaceWa("¡Hola Penitentia! Quería consultar el precio de la pizza " + p.nombre + ".") + '">Consultar</a>';
       } else {
-        pie = '<p class="pizza__precio">' + pesos(p.precio) + '</p>' +
+        pie = '<p class="pizza__precio' + (conPrecio ? "" : " pizza__precio--consultar") + '">' + (conPrecio ? pesos(p.precio) : "Consultá el precio") + '</p>' +
               '<div class="cantidad" role="group" aria-label="Cantidad de ' + p.nombre + '">' +
                 '<button type="button" data-menos aria-label="Una menos"' + (hay ? "" : " disabled") + '>−</button>' +
                 '<output data-sel>' + seleccion[p.id] + '</output>' +
