@@ -51,7 +51,7 @@ window.PENITENTIA_PRODUCTOS = [
     nombre: "Agridulce",
     descripcion: "Salsa de tomate, mozzarella, peras, miel y queso azul.",
     precio: 10900,
-    foto: "",
+    foto: "img/p-agridulce-800.webp",
     disponible: true
   },
   {
@@ -59,7 +59,7 @@ window.PENITENTIA_PRODUCTOS = [
     nombre: "Tropical",
     descripcion: "Salsa de tomate, mozzarella, ananá y jamón cocido.",
     precio: 13300,
-    foto: "",
+    foto: "img/p-tropical-800.webp",
     disponible: true
   },
   {
@@ -67,7 +67,7 @@ window.PENITENTIA_PRODUCTOS = [
     nombre: "Americana",
     descripcion: "Salsa de tomate, mozzarella, salchicha alemana y panceta.",
     precio: 14200,
-    foto: "",
+    foto: "img/p-americana-800.webp",
     disponible: true
   }
 ];
