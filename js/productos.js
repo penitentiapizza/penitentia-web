@@ -41,15 +41,15 @@ window.PENITENTIA_PRODUCTOS = [
   {
     id: "jamon-y-morron",
     nombre: "Jamón y morrón",
-    descripcion: "Salsa de tomate, mozzarella, jamón cocido, morrón y aceitunas verdes.",
-    precio: 11100,
+    descripcion: "Salsa de tomate, mozzarella, jamón cocido y morrón.",
+    precio: 13000,
     foto: "img/p-jamon-800.webp",
     disponible: true
   },
   {
     id: "agridulce",
     nombre: "Agridulce",
-    descripcion: "Salsa de tomate, mozzarella, peras, miel y queso azul.",
+    descripcion: "Salsa de tomate, mozzarella, peras, miel levemente picante y queso azul.",
     precio: 10900,
     foto: "img/p-agridulce-800.webp",
     disponible: true
