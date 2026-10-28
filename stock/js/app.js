@@ -199,9 +199,13 @@
     for (const id of elegidas) if (!lista.some(p => p.id === id)) elegidas.delete(id);
     $("#filas").innerHTML = lista.map(p => {
       const e = estadoDe(p);
-      const acc = p.estado === "stock"
+      let acc = p.estado === "stock"
         ? `<button type="button" class="btn-fila" data-fila="vender">Vendida</button>`
         : `<button type="button" class="btn-fila btn-fila--suave" data-fila="stock">Deshacer</button>`;
+      if (p.estado === "baja") acc += `
+          <button type="button" class="btn-icono" data-fila="eliminar" aria-label="Eliminar definitivamente ${p.codigo}" title="Eliminar definitivamente">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg>
+          </button>`;
       return `<tr data-id="${p.id}" class="${elegidas.has(p.id) ? "elegida" : ""}">
         <td class="col-check"><input type="checkbox" ${elegidas.has(p.id) ? "checked" : ""} aria-label="Elegir ${p.codigo}"></td>
         <td class="col-codigo">${p.codigo}</td>
@@ -234,6 +238,23 @@
     const barra = $("#acciones");
     barra.hidden = n === 0;
     $("#acciones-num").textContent = n === 1 ? "1 pizza elegida" : `${n} pizzas elegidas`;
+    /* «Eliminar» sólo aparece si todas las elegidas están dadas de baja */
+    $("[data-accion=eliminar]").hidden = !n || pizzas.some(p => elegidas.has(p.id) && p.estado !== "baja");
+  }
+
+  /* Borrar para siempre (sólo pizzas dadas de baja). No tiene «Deshacer», por eso pregunta antes. */
+  async function eliminar(ids) {
+    const lista = pizzas.filter(p => ids.includes(p.id) && p.estado === "baja");
+    if (!lista.length) return;
+    const que = lista.length === 1 ? `la pizza ${lista[0].codigo}` : `${lista.length} pizzas dadas de baja`;
+    if (!window.confirm(`¿Eliminar definitivamente ${que}?\n\nSe borra del sistema y no se puede recuperar.`)) return;
+    try {
+      const borradas = await D.eliminar(lista.map(p => p.id));
+      pizzas = pizzas.filter(p => !borradas.includes(p.id));
+      borradas.forEach(id => elegidas.delete(id));
+      refrescar();
+      avisar(borradas.length === 1 ? `${lista[0].codigo} eliminada` : `${borradas.length} pizzas eliminadas`);
+    } catch (e) { avisar("No se pudo eliminar: " + e.message); }
   }
 
   async function cambiarEstado(ids, estado, { silencio = false } = {}) {
@@ -288,6 +309,7 @@
     const b = e.target.closest("[data-fila]");
     if (b) {
       if (b.dataset.fila === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => p.id === id));
+      else if (b.dataset.fila === "eliminar") eliminar([id]);
       else cambiarEstado([id], b.dataset.fila === "vender" ? "vendida" : "stock");
       return;
     }
@@ -309,6 +331,7 @@
     if (a === "limpiar") { elegidas.clear(); pintarTabla(); }
     else if (a === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => elegidas.has(p.id)).sort((x, y) => x.codigo.localeCompare(y.codigo, "es", { numeric: true })));
     else if (a === "vender") cambiarEstado(ids.filter(id => pizzas.find(p => p.id === id).estado === "stock"), "vendida");
+    else if (a === "eliminar") eliminar(ids);
     else cambiarEstado(ids, a);
   });
 

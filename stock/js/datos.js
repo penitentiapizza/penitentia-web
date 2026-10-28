@@ -52,6 +52,12 @@
         falla(error);
         return data;
       },
+      /* Borra para siempre; sólo pizzas dadas de baja. Devuelve los id borrados. */
+      async eliminar(ids) {
+        const { data, error } = await tabla().delete().in("id", ids).eq("estado", "baja").select("id");
+        falla(error);
+        return data.map(p => p.id);
+      },
     };
   }
 
@@ -97,6 +103,13 @@
         const todas = leer(K.pizzas, []).map(p => (set.has(p.id) ? { ...p, ...campos } : p));
         guardar(K.pizzas, todas);
         return todas.filter(p => set.has(p.id));
+      },
+      async eliminar(ids) {
+        const set = new Set(ids);
+        const todas = leer(K.pizzas, []);
+        const borradas = todas.filter(p => set.has(p.id) && p.estado === "baja").map(p => p.id);
+        guardar(K.pizzas, todas.filter(p => !borradas.includes(p.id)));
+        return borradas;
       },
     };
   }
