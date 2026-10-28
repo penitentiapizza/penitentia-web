@@ -128,7 +128,7 @@
       refrescar();
       li.querySelector("[data-cantidad]").value = 1;
       const rango = creadas.length > 1 ? `${creadas[0].codigo} a ${creadas.at(-1).codigo}` : creadas[0].codigo;
-      avisar(`${porId[id].nombre}: ${rango}`, { texto: "Volver a imprimir", fn: () => window.imprimirEtiquetas(creadas) });
+      avisar(`${porId[id].nombre}: ${rango}`, { texto: "Ver etiquetas", fn: () => window.imprimirEtiquetas(creadas) });
     } catch (e) {
       avisar("No se guardó: " + e.message);
     } finally {

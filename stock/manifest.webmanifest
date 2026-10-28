@@ -3,7 +3,7 @@
   "short_name": "Stock",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#1D2E4A",
   "theme_color": "#1D2E4A",
   "lang": "es-AR",

@@ -57,7 +57,7 @@ button { cursor: pointer; touch-action: manipulation; }
 .barra :focus-visible, .ingreso__marca :focus-visible, .acciones :focus-visible, .tostada :focus-visible { outline-color: var(--blanco); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sr-movil { display: none; }
-.sistema svg, .acciones svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sistema svg, .acciones svg, .previa__barra svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .contenedor { width: 100%; max-width: var(--ancho); margin: 0 auto; padding: 0 var(--gutter); }
 .titulo { font-size: var(--t-titulo); font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; }
@@ -383,7 +383,20 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
    En pantalla queda fuera de vista (para poder medir el texto);
    al imprimir es lo único que sale, una etiqueta por hoja.
    ========================================================= */
-#impresion { position: absolute; left: -10000px; top: 0; }
+/* Vista previa en pantalla */
+.previa { position: fixed; inset: 0; z-index: 50; overflow: auto; overscroll-behavior: contain; background: #4B5568; }
+body.con-previa { overflow: hidden; }
+.previa__barra {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 12px;
+  padding: max(10px, env(safe-area-inset-top)) var(--gutter) 10px; background: var(--azul); color: var(--blanco);
+}
+.previa__barra h2 { flex: 1; font-size: 16px; font-weight: 700; text-align: center; }
+.previa__volver { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px 0 0; border: 0; background: none; color: var(--blanco); font-weight: 700; }
+.previa__volver svg { width: 22px; height: 22px; }
+.previa__barra .btn { min-height: 44px; padding: 0 20px; }
+.previa__nota { margin: 16px var(--gutter) 0; padding: 12px 14px; border-radius: 12px; background: var(--blanco); font-size: var(--t-chico); line-height: 1.45; }
+#impresion { --escala: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
+#impresion .etq { zoom: var(--escala); box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .45); flex: none; }
 .etq {
   --linea: 1pt solid #000; --aire: 4.25pt; --dentro: 2.2mm;
   width: 100mm; height: 150mm; padding: 4mm; overflow: hidden;
@@ -426,6 +439,10 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 @media print {
   @page { size: 100mm 150mm; margin: 0; }
   html, body { background: #fff; }
-  body > *:not(#impresion) { display: none !important; }
-  #impresion { position: static; }
+  body > *:not(#previa) { display: none !important; }
+  body.con-previa { overflow: visible; }
+  .previa { position: static; overflow: visible; background: #fff; }
+  .previa__barra, .previa__nota { display: none !important; }
+  #impresion { display: block; padding: 0; }
+  #impresion .etq { zoom: 1; box-shadow: none; }
 }

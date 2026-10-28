@@ -59,13 +59,50 @@
     while (el.scrollWidth > el.clientWidth && t > minimo) { t -= .25; el.style.fontSize = t + "pt"; }
   }
 
+  /* ---------- Vista previa ---------- */
+  const previa = document.getElementById("previa");
+  const caja = document.getElementById("impresion");
+  const conMouse = window.matchMedia("(hover: hover) and (pointer: fine)");
+  let volverA = null;
+
+  /* En pantalla la etiqueta se achica para entrar en el ancho (en el papel sale a 100 × 150 mm) */
+  function escalar() {
+    const etq = caja.querySelector(".etq");
+    if (!etq || previa.hidden) return;
+    const ancho = 100 * 96 / 25.4;
+    caja.style.setProperty("--escala", Math.min(1, (caja.clientWidth - 32) / ancho).toFixed(3));
+  }
+
+  function cerrar() {
+    previa.hidden = true;
+    document.body.classList.remove("con-previa");
+    caja.innerHTML = "";
+    if (volverA) volverA.focus();
+  }
+
+  /* Abre la vista previa con las etiquetas; en la compu además abre la impresión sola */
   window.imprimirEtiquetas = async function (pizzas) {
-    const caja = document.getElementById("impresion");
+    volverA = document.activeElement;
     const porId = Object.fromEntries(window.VARIEDADES.map(v => [v.id, v]));
+    caja.style.setProperty("--escala", 1);
     caja.innerHTML = pizzas.map(p => html(p, porId[p.variedad])).join("");
+    document.getElementById("t-previa").textContent = pizzas.length === 1 ? "1 etiqueta" : `${pizzas.length} etiquetas`;
+    document.getElementById("previa-nota").hidden = !navigator.standalone;
+    previa.hidden = false;
+    document.body.classList.add("con-previa");
+    previa.scrollTop = 0;
     caja.querySelectorAll(".etq__sabor").forEach(h => ajustar(h, 23.5, 12));
     caja.querySelectorAll(".etq__lote").forEach(l => ajustar(l, 10, 7));
-    await Promise.all([...caja.querySelectorAll("img")].map(img => img.decode().catch(() => {})));
-    window.print();
+    escalar();
+    document.getElementById("previa-imprimir").focus();
+    /* Espera a que carguen el logo y los íconos, como mucho 2 segundos */
+    const imagenes = Promise.all([...caja.querySelectorAll("img")].map(img => img.decode().catch(() => {})));
+    await Promise.race([imagenes, new Promise(r => setTimeout(r, 2000))]);
+    if (conMouse.matches && !previa.hidden) window.print();
   };
+
+  document.getElementById("previa-imprimir").addEventListener("click", () => window.print());
+  document.getElementById("previa-volver").addEventListener("click", cerrar);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !previa.hidden) cerrar(); });
+  window.addEventListener("resize", escalar);
 })();
