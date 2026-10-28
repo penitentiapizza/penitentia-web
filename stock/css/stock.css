@@ -380,8 +380,8 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
    Arial. Todos los bloques ocupan el ancho completo entre márgenes,
    así los bordes, el negro de alérgenos, los íconos y el QR quedan
    alineados a la izquierda y a la derecha.
-   En pantalla queda fuera de vista (para poder medir el texto);
-   al imprimir es lo único que sale, una etiqueta por hoja.
+   Se ve en la vista previa (achicada en el celular); al imprimir
+   es lo único que sale, una etiqueta por hoja.
    ========================================================= */
 /* Vista previa en pantalla */
 .previa { position: fixed; inset: 0; z-index: 50; overflow: auto; overscroll-behavior: contain; background: #4B5568; }
@@ -397,44 +397,52 @@ body.con-previa { overflow: hidden; }
 .previa__nota { margin: 16px var(--gutter) 0; padding: 12px 14px; border-radius: 12px; background: var(--blanco); font-size: var(--t-chico); line-height: 1.45; }
 #impresion { --escala: 1; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 16px calc(40px + env(safe-area-inset-bottom)); }
 #impresion .etq { zoom: var(--escala); box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .45); flex: none; }
+/* --k agranda textos, espacios, íconos y QR por igual para que cada etiqueta llene la hoja
+   hasta abajo (etiqueta.js lo calcula según el largo de los textos de cada variedad). */
 .etq {
-  --linea: 1pt solid #000; --aire: 4.25pt; --dentro: 2.2mm;
+  --k: 1;
+  --extra: 0px;
+  --linea: 1pt solid #000; --aire: calc(4.25pt * var(--k) + var(--extra)); --dentro: 2.2mm;
   width: 100mm; height: 150mm; padding: 4mm; overflow: hidden;
-  background: #fff; color: #000; font: 8pt/1.15 Arial, "Helvetica Neue", Helvetica, sans-serif;
+  display: flex; flex-direction: column;
+  background: #fff; color: #000; font: calc(8pt * var(--k))/1.15 Arial, "Helvetica Neue", Helvetica, sans-serif;
   font-variant-numeric: normal; -webkit-print-color-adjust: exact; print-color-adjust: exact;
   break-after: page; page-break-after: always;
 }
+.etq.midiendo { height: auto; }
 .etq:last-child { break-after: auto; page-break-after: auto; }
 .etq h1, .etq h2, .etq p, .etq ul { margin: 0; padding: 0; font-size: inherit; }
 .etq img { display: block; }
 
-.etq__cabecera { border: var(--linea); padding: 2.8mm 5mm 2.2mm; text-align: center; }
-.etq__cabecera img { width: 47mm; height: auto; margin: 0 auto; }
-.etq__cabecera p { margin-top: 3pt !important; font-size: 7pt; font-weight: 700; letter-spacing: 2.4pt; }
+.etq__cabecera { flex: none; border: var(--linea); padding: calc(2.8mm * var(--k)) 5mm calc(2.2mm * var(--k)); text-align: center; }
+.etq__cabecera img { width: min(calc(47mm * var(--k)), 70mm); height: auto; margin: 0 auto; }
+.etq__cabecera p { margin-top: .43em !important; font-size: .875em; font-weight: 700; letter-spacing: .34em; }
 
-.etq__sabor { margin-top: 3.4pt !important; font-size: 23.5pt !important; font-weight: 700; line-height: 1.15; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
-.etq__bajada { margin-top: 2pt !important; font-size: 8.5pt !important; color: #4A4A4A; }
+.etq .etq__sabor { margin-top: calc(3.4pt * var(--k)); font-size: 2.9375em; font-weight: 700; line-height: 1.15; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.etq__bajada { margin-top: .25em !important; font-size: 1.0625em !important; color: #4A4A4A; }
 
-.etq__datos { margin-top: var(--aire); display: grid; grid-template-columns: 1680fr 1800fr 1735fr; border: var(--linea); }
-.etq__datos div { padding: 1.3mm var(--dentro) 1.5mm; min-width: 0; }
+.etq__datos { flex: none; margin-top: var(--aire); display: grid; grid-template-columns: 1680fr 1800fr 1735fr; border: var(--linea); }
+.etq__datos div { padding: calc(1.3mm * var(--k)) var(--dentro) calc(1.5mm * var(--k)); min-width: 0; }
 .etq__datos div + div { border-left: var(--linea); }
-.etq__rotulo { display: block; font-size: 6.5pt; font-weight: 700; letter-spacing: .3pt; text-transform: uppercase; white-space: nowrap; }
-.etq__datos strong { display: block; margin-top: 2.6pt; font-size: 10pt; line-height: 1.15; white-space: nowrap; overflow: hidden; }
-.etq__vacio { display: inline-block; border-bottom: .75pt solid #000; min-width: 12mm; height: 9pt; vertical-align: bottom; }
+.etq__rotulo { display: block; font-size: .8125em; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+.etq__datos strong { display: block; margin-top: .26em; font-size: 1.25em; line-height: 1.15; white-space: nowrap; overflow: hidden; }
+.etq__vacio { display: inline-block; border-bottom: .75pt solid #000; min-width: 12mm; height: .9em; vertical-align: bottom; }
 
-.etq__titulo { margin-top: var(--aire) !important; font-size: 8.5pt !important; font-weight: 700; letter-spacing: .3pt; text-transform: uppercase; }
-.etq__pasos { list-style: none; margin-top: 3.4pt !important; }
-.etq__pasos li { display: grid; grid-template-columns: 8.4mm 1fr; align-items: center; padding: .4mm 0; line-height: 1.27; }
-.etq__pasos img { width: 5.6mm; height: 5.8mm; object-fit: contain; object-position: left center; }
-.etq__ingredientes { margin-top: 3pt !important; line-height: 1.29; }
-.etq .etq__alergenos { margin-top: var(--aire); background: #000; color: #fff; font-weight: 700; padding: 1.5mm var(--dentro); }
+.etq__titulo { margin-top: var(--aire) !important; font-size: 1.0625em !important; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.etq__pasos { list-style: none; margin-top: calc(3.4pt * var(--k)) !important; }
+.etq__pasos li { display: grid; grid-template-columns: calc(8.4mm * var(--k)) 1fr; align-items: center; padding: calc(.4mm * var(--k)) 0; line-height: 1.27; }
+.etq__pasos img { width: calc(5.6mm * var(--k)); height: calc(5.8mm * var(--k)); object-fit: contain; object-position: left center; }
+.etq__ingredientes { margin-top: .375em !important; line-height: 1.29; }
+.etq .etq__alergenos { margin-top: var(--aire); background: #000; color: #fff; font-weight: 700; padding: calc(1.5mm * var(--k)) var(--dentro); }
 
-.etq__pie { margin-top: var(--aire); border-top: var(--linea); padding-top: 2.2mm; display: grid; grid-template-columns: 23mm 1fr; align-items: center; }
-.etq__qr { width: 17.3mm; height: 17.3mm; image-rendering: pixelated; }
-.etq__pie strong { display: block; font-size: 9.5pt; }
-.etq__web { margin-top: 2pt !important; font-size: 8.5pt !important; font-weight: 700; }
-.etq__red { margin-top: 1.6pt !important; display: flex; align-items: center; gap: 1.4mm; font-size: 7.5pt !important; }
-.etq__red img { width: 2.9mm; height: 2.9mm; object-fit: contain; }
+/* El pie va al fondo de la hoja: lo que sobre (muy poco) queda arriba de la línea */
+.etq__pie { flex: none; margin-top: auto; border-top: var(--linea); padding-top: calc(2.2mm * var(--k)); display: grid; grid-template-columns: calc(23mm * var(--k)) 1fr; align-items: center; }
+.etq__ingredientes + .etq__alergenos { margin-bottom: var(--aire); }
+.etq__qr { width: calc(17.3mm * var(--k)); height: calc(17.3mm * var(--k)); image-rendering: pixelated; }
+.etq__pie strong { display: block; font-size: 1.1875em; }
+.etq__web { margin-top: .25em !important; font-size: 1.0625em !important; font-weight: 700; }
+.etq__red { margin-top: .2em !important; display: flex; align-items: center; gap: 1.4mm; font-size: .9375em !important; }
+.etq__red img { width: 1.1em; height: 1.1em; object-fit: contain; }
 
 @media print {
   @page { size: 100mm 150mm; margin: 0; }

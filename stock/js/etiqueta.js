@@ -16,7 +16,7 @@
     return `
 <article class="etq">
   <header class="etq__cabecera">
-    <img src="${A}logo.png" alt="">
+    <img src="${A}logo.png" alt="" width="1200" height="495">
     <p>CONGELADA · A LA PIEDRA</p>
   </header>
 
@@ -52,11 +52,27 @@
 </article>`;
   }
 
-  /* El texto que no entra en una línea se achica hasta entrar (sabor y lote) */
+  /* El texto que no entra en una línea se achica hasta entrar (sabor y lote); en em, para seguir a --k */
   function ajustar(el, desde, minimo) {
     let t = desde;
-    el.style.fontSize = t + "pt";
-    while (el.scrollWidth > el.clientWidth && t > minimo) { t -= .25; el.style.fontSize = t + "pt"; }
+    el.style.fontSize = t + "em";
+    while (el.scrollWidth > el.clientWidth && t > minimo) { t -= .02; el.style.fontSize = t + "em"; }
+  }
+
+  /* Agranda todo (--k) hasta que la etiqueta llene la hoja de 150 mm sin pasarse */
+  const ALTO = 150 * 96 / 25.4;
+  function llenar(etq) {
+    let bajo = 1, alto = 1.6;
+    etq.classList.add("midiendo");
+    for (let i = 0; i < 10; i++) {
+      const k = (bajo + alto) / 2;
+      etq.style.setProperty("--k", k);
+      if (etq.offsetHeight <= ALTO - 1) bajo = k; else alto = k;
+    }
+    etq.style.setProperty("--k", bajo.toFixed(3));
+    /* Lo que sobra (los renglones crecen de a saltos) se reparte entre los 5 espacios entre bloques */
+    etq.style.setProperty("--extra", Math.max(0, (ALTO - 1 - etq.offsetHeight) / 5).toFixed(2) + "px");
+    etq.classList.remove("midiendo");
   }
 
   /* ---------- Vista previa ---------- */
@@ -91,8 +107,11 @@
     previa.hidden = false;
     document.body.classList.add("con-previa");
     previa.scrollTop = 0;
-    caja.querySelectorAll(".etq__sabor").forEach(h => ajustar(h, 23.5, 12));
-    caja.querySelectorAll(".etq__lote").forEach(l => ajustar(l, 10, 7));
+    /* Primero el nombre en una línea, después agrandar hasta llenar la hoja, y otra vez el nombre */
+    caja.querySelectorAll(".etq__sabor").forEach(h => ajustar(h, 2.9375, 1.5));
+    caja.querySelectorAll(".etq").forEach(llenar);
+    caja.querySelectorAll(".etq__sabor").forEach(h => ajustar(h, 2.9375, 1.5));
+    caja.querySelectorAll(".etq__lote").forEach(l => ajustar(l, 1.25, .875));
     escalar();
     document.getElementById("previa-imprimir").focus();
     /* Espera a que carguen el logo y los íconos, como mucho 2 segundos */
