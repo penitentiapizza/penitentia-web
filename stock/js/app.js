@@ -15,6 +15,7 @@
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   let pizzas = [];
+  let eliminados = [];   // códigos de pizzas eliminadas: nunca se reusan
   const filtro = { estado: "stock", variedad: "", texto: "" };
   const elegidas = new Set();
 
@@ -113,9 +114,11 @@
     let creadas;
     try {
       for (let intento = 0; intento < 3 && !creadas; intento++) {
-        if (intento) pizzas = await D.listar();          // alguien más generó en el medio: recalcular
+        if (intento) [pizzas, eliminados] = await Promise.all([D.listar(), D.codigosEliminados()]);   // alguien más generó en el medio: recalcular
         const pre = prefijo(fecha, id);
-        const ultimo = Math.max(0, ...pizzas.filter(p => p.codigo.startsWith(pre + "-")).map(p => p.numero));
+        const numeros = [...pizzas.map(p => p.codigo), ...eliminados]
+          .filter(c => c.startsWith(pre + "-")).map(c => parseInt(c.slice(pre.length + 1), 10) || 0);
+        const ultimo = Math.max(0, ...numeros);
         const nuevas = Array.from({ length: cant }, (_, i) => ({
           codigo: `${pre}-${ultimo + i + 1}`, variedad: id, fecha_lote: fecha, numero: ultimo + i + 1,
           vencimiento: sumarMeses(fecha, window.MESES_VENCIMIENTO), peso,
@@ -252,6 +255,7 @@
       const borradas = await D.eliminar(lista.map(p => p.id));
       pizzas = pizzas.filter(p => !borradas.includes(p.id));
       borradas.forEach(id => elegidas.delete(id));
+      eliminados.push(...lista.filter(p => borradas.includes(p.id)).map(p => p.codigo));
       refrescar();
       avisar(borradas.length === 1 ? `${lista[0].codigo} eliminada` : `${borradas.length} pizzas eliminadas`);
     } catch (e) { avisar("No se pudo eliminar: " + e.message); }
@@ -378,7 +382,7 @@
     $("#sistema").hidden = false;
     $("#nombre-usuario").textContent = sesion.usuario;
     $("#chip-prueba").hidden = D.modo !== "prueba";
-    try { pizzas = await D.listar(); } catch (e) { avisar("No se pudieron leer las pizzas: " + e.message); }
+    try { [pizzas, eliminados] = await Promise.all([D.listar(), D.codigosEliminados()]); } catch (e) { avisar("No se pudieron leer las pizzas: " + e.message); }
     refrescar();
     let vista = "producir";
     try { vista = sessionStorage.getItem("penitentia.vista") || vista; } catch { /* nada */ }
@@ -411,7 +415,7 @@
     } finally { btn.disabled = false; btn.classList.remove("cargando"); }
   });
 
-  $("#btn-salir").addEventListener("click", async () => { await D.salir(); pizzas = []; elegidas.clear(); abrirIngreso(); });
+  $("#btn-salir").addEventListener("click", async () => { await D.salir(); pizzas = []; eliminados = []; elegidas.clear(); abrirIngreso(); });
 
   /* Arranque */
   $("#fecha-lote").value = hoyISO();

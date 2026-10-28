@@ -58,12 +58,22 @@
         falla(error);
         return data.map(p => p.id);
       },
+      /* Códigos de pizzas eliminadas: no se vuelven a usar (la base los anota sola al borrar) */
+      async codigosEliminados() {
+        const codigos = [];
+        for (let desde = 0; ; desde += 1000) {
+          const { data, error } = await sb.from("codigos_eliminados").select("codigo").range(desde, desde + 999);
+          if (error) { console.warn("Falta la tabla codigos_eliminados (ver supabase.sql):", error.message); return codigos; }
+          codigos.push(...data.map(c => c.codigo));
+          if (data.length < 1000) return codigos;
+        }
+      },
     };
   }
 
   /* ---------- Modo prueba (este navegador) ---------- */
   function crearLocal() {
-    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion" };
+    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados" };
     const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
     const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
     const hash = async (texto) => {
@@ -91,7 +101,7 @@
       async listar() { return leer(K.pizzas, []); },
       async crear(pizzas) {
         const todas = leer(K.pizzas, []);
-        const usados = new Set(todas.map(p => p.codigo));
+        const usados = new Set([...todas.map(p => p.codigo), ...leer(K.eliminados, [])]);
         if (pizzas.some(p => usados.has(p.codigo))) throw Object.assign(new Error("Código repetido"), { repetido: true });
         const ahora = new Date().toISOString();
         const nuevas = pizzas.map(p => ({ id: crypto.randomUUID(), estado: "stock", vendida_el: null, canal: null, nota: null, creada_el: ahora, ...p }));
@@ -107,10 +117,12 @@
       async eliminar(ids) {
         const set = new Set(ids);
         const todas = leer(K.pizzas, []);
-        const borradas = todas.filter(p => set.has(p.id) && p.estado === "baja").map(p => p.id);
-        guardar(K.pizzas, todas.filter(p => !borradas.includes(p.id)));
-        return borradas;
+        const borradas = todas.filter(p => set.has(p.id) && p.estado === "baja");
+        guardar(K.eliminados, [...leer(K.eliminados, []), ...borradas.map(p => p.codigo)]);
+        guardar(K.pizzas, todas.filter(p => !borradas.includes(p)));
+        return borradas.map(p => p.id);
       },
+      async codigosEliminados() { return leer(K.eliminados, []); },
     };
   }
 
