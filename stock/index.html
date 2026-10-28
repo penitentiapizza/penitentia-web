@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stock y lotes · Penitentia</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#1D2E4A">
+  <link rel="icon" href="../img/favicon.svg" type="image/svg+xml">
+  <!-- Ícono y nombre al agregarla a la pantalla de inicio del celular -->
+  <link rel="apple-touch-icon" href="assets/icono-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-title" content="Stock">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/stock.css">
+</head>
+<body>
+
+  <!-- INGRESO -->
+  <section class="ingreso" id="ingreso" hidden>
+    <div class="ingreso__marca">
+      <img src="../img/logo-blanco.svg" alt="Penitentia Pizza" width="280" height="115">
+      <p>Stock y lotes</p>
+    </div>
+    <form class="ingreso__form" id="form-ingreso" novalidate>
+      <h1><img src="../img/h-hoy-azul.svg" alt="Hoy pinta Penitentia." width="1436" height="288"></h1>
+      <label class="campo">
+        <span>Usuario</span>
+        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label class="campo">
+        <span>Contraseña</span>
+        <input name="clave" type="password" autocomplete="current-password" required>
+      </label>
+      <p class="aviso aviso--error" id="error-ingreso" role="alert" hidden></p>
+      <button class="btn btn--azul btn--ancho" type="submit">Entrar</button>
+      <p class="ingreso__nota" id="nota-prueba" hidden>
+        <b>Modo prueba.</b> Los datos quedan sólo en este navegador. La primera vez que entrás, el usuario y la contraseña que escribas quedan como los tuyos.
+      </p>
+    </form>
+  </section>
+
+  <!-- SISTEMA -->
+  <div class="sistema" id="sistema" hidden>
+    <header class="barra">
+      <div class="barra__in">
+        <img class="barra__logo" src="../img/logo-blanco.svg" alt="Penitentia Pizza" width="97" height="40">
+        <nav class="pestanas" aria-label="Secciones">
+          <button type="button" class="pestana" data-ir="producir" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14v6M14 17h6"/></svg>
+            Producir
+          </button>
+          <button type="button" class="pestana" data-ir="stock">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M4 10h16M8 6.5h2M8 13.5h2"/></svg>
+            Stock <span class="pestana__num" id="num-stock">0</span>
+          </button>
+        </nav>
+        <div class="barra__usuario">
+          <span class="chip-prueba" id="chip-prueba" hidden>Modo prueba</span>
+          <span class="barra__nombre" id="nombre-usuario"></span>
+          <button type="button" class="btn-texto" id="btn-salir">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- PRODUCIR -->
+      <section class="vista" id="producir" aria-labelledby="t-producir">
+        <div class="contenedor">
+          <div class="cabeza">
+            <h2 id="t-producir"><img class="frase" src="../img/h-sabor-azul.svg" alt="Elegí tu sabor." width="968" height="266"></h2>
+            <div class="fecha-lote">
+              <label class="campo campo--linea">
+                <span>Fecha del lote</span>
+                <input type="date" id="fecha-lote" required>
+              </label>
+              <p class="fecha-lote__vence">Vencen el <strong id="vence-lote">—</strong></p>
+            </div>
+          </div>
+
+          <ul class="variedades" id="variedades"></ul>
+        </div>
+      </section>
+
+      <!-- STOCK -->
+      <section class="vista" id="stock" aria-labelledby="t-stock" hidden>
+        <div class="contenedor">
+          <div class="cabeza">
+            <h2 id="t-stock" class="titulo">Stock</h2>
+            <form class="vender" id="form-vender" autocomplete="off">
+              <label class="campo campo--linea">
+                <span>Vender por código</span>
+                <input id="codigo-vender" placeholder="261028-AG-1" autocapitalize="characters" spellcheck="false">
+              </label>
+              <label class="campo campo--linea campo--canal">
+                <span>Canal</span>
+                <select id="canal">
+                  <option value="">Sin indicar</option>
+                  <option>WhatsApp</option>
+                  <option>Venta directa</option>
+                  <option>Mayorista</option>
+                  <option>PedidosYa</option>
+                  <option>Uber Eats</option>
+                  <option>Otro</option>
+                </select>
+              </label>
+              <button class="btn btn--azul" type="submit">Marcar vendida</button>
+            </form>
+          </div>
+
+          <div class="resumen" id="resumen" aria-label="Pizzas en el freezer por variedad"></div>
+
+          <div class="filtros">
+            <div class="segmentos" role="group" aria-label="Estado">
+              <button type="button" data-estado="stock" aria-pressed="true">En freezer</button>
+              <button type="button" data-estado="vendida" aria-pressed="false">Vendidas</button>
+              <button type="button" data-estado="baja" aria-pressed="false">De baja</button>
+              <button type="button" data-estado="" aria-pressed="false">Todas</button>
+            </div>
+            <label class="campo campo--linea">
+              <span>Variedad</span>
+              <select id="filtro-variedad"><option value="">Todas</option></select>
+            </label>
+            <label class="campo campo--linea campo--buscar">
+              <span>Buscar</span>
+              <input id="buscar" type="search" placeholder="Código o fecha" spellcheck="false">
+            </label>
+          </div>
+
+          <div class="tabla-caja">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th class="col-check"><input type="checkbox" id="marcar-todas" aria-label="Seleccionar todas"></th>
+                  <th>Código</th>
+                  <th>Variedad</th>
+                  <th>Lote</th>
+                  <th>Vence</th>
+                  <th>Estado</th>
+                  <th class="col-acc"><span class="sr">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody id="filas"></tbody>
+            </table>
+            <div class="vacio" id="vacio" hidden></div>
+          </div>
+        </div>
+
+        <!-- Acciones sobre las pizzas elegidas -->
+        <div class="acciones" id="acciones" hidden>
+          <span id="acciones-num"></span>
+          <button type="button" class="btn btn--blanco" data-accion="vender">Marcar vendidas</button>
+          <button type="button" class="btn btn--contorno" data-accion="imprimir">Imprimir etiquetas</button>
+          <button type="button" class="btn btn--contorno" data-accion="stock">Volver al freezer</button>
+          <button type="button" class="btn btn--contorno" data-accion="baja">Dar de baja</button>
+          <button type="button" class="btn-texto btn-texto--claro" data-accion="limpiar">Cancelar</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Aviso flotante -->
+  <div class="tostada" id="tostada" role="status" aria-live="polite" hidden>
+    <p id="tostada-texto"></p>
+    <button type="button" class="btn-texto btn-texto--claro" id="tostada-accion" hidden></button>
+  </div>
+
+  <!-- Etiquetas para imprimir (fuera de pantalla; sólo aparecen al imprimir) -->
+  <div id="impresion" aria-hidden="true"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/variedades.js"></script>
+  <script src="js/datos.js"></script>
+  <script src="js/etiqueta.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

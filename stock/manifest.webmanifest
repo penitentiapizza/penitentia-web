@@ -1,0 +1,14 @@
+{
+  "name": "Penitentia · Stock y lotes",
+  "short_name": "Stock",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1D2E4A",
+  "theme_color": "#1D2E4A",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "assets/icono-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
