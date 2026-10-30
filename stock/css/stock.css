@@ -194,7 +194,6 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); cur
   .acciones { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .barra__logo { display: block !important; width: 84px !important; }
   .barra__nombre { display: inline; }
-  .hoja-caja { max-height: none; }
 }
 
 /* Celulares angostos: que «Salir» siempre entre en la barra */
@@ -432,7 +431,8 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .costos-ayuda { font-size: var(--t-chico); color: var(--azul-70); margin: 6px 0 14px; }
 .muestra-editable { padding: 1px 6px; border-radius: 4px; background: #FFF2CC; color: var(--azul); font-weight: 700; box-shadow: inset 0 -2px 0 #E2C66B; }
 
-.hoja-caja { overflow: auto; max-height: calc(100svh - 260px); border-radius: var(--radio); box-shadow: inset 0 0 0 1.5px var(--azul-12); background: var(--blanco); -webkit-overflow-scrolling: touch; }
+/* El cuadro crece con la página (una sola barra para bajar); sólo se desliza de costado si la pestaña es más ancha */
+.hoja-caja { overflow-x: auto; overflow-y: hidden; border-radius: var(--radio); box-shadow: inset 0 0 0 1.5px var(--azul-12); background: var(--blanco); -webkit-overflow-scrolling: touch; }
 .hoja-caja:focus { outline: none; }
 .hoja { border-collapse: collapse; table-layout: fixed; font-size: 13.5px; line-height: 1.3; }
 .hoja td { padding: 6px 8px; border: 1px solid #EDF0F4; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; height: 30px; }
