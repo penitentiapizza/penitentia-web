@@ -144,7 +144,9 @@
       spans[dir(r.s.r, r.s.c)] = { rs: r.e.r - r.s.r + 1, cs: Math.min(r.e.c, ultCol) - r.s.c + 1 };
       for (let f = r.s.r; f <= r.e.r; f++) for (let c = r.s.c; c <= r.e.c; c++) if (f !== r.s.r || c !== r.s.c) tapadas.add(dir(f, c));
     }
-    const anchos = Array.from({ length: ultCol + 1 }, (_, c) => h.anchos[c] || 72);
+    /* Columnas sin nada (separadores del Excel) se angostan, para que la pestaña ocupe menos ancho */
+    const usadas = new Set(Object.entries(h.celdas).filter(([, cel]) => cel.f || (cel.v !== undefined && cel.v !== null && cel.v !== "")).map(([a]) => XLSX.utils.decode_cell(a).c));
+    const anchos = Array.from({ length: ultCol + 1 }, (_, c) => (usadas.has(c) ? h.anchos[c] || 72 : 14));
     let html = `<table class="hoja" style="width:${anchos.reduce((a, b) => a + b, 0)}px"><colgroup>${anchos.map(w => `<col style="width:${w}px">`).join("")}</colgroup><tbody>`;
 
     for (let r = 0; r < h.filas; r++) {
@@ -178,6 +180,7 @@
     }
     html += "</tbody></table>";
     $("#costos-hoja").innerHTML = html;
+    ajustarAncho();
     if (formularioDe !== h.nombre) { formularioDe = h.nombre; pintarAgregar(h.nombre); }
   }
   let formularioDe = null;
@@ -814,6 +817,19 @@
     caja.hidden = false;
     mostrarElegido(caja.querySelector(".agregar__acciones"));
   }
+  /* En la compu la pestaña se achica para entrar en el ancho (sin deslizar de costado); en el celular se desliza */
+  const ESCALA_MINIMA = .7;
+  function ajustarAncho() {
+    const caja = $("#costos-hoja"), tabla = caja && caja.querySelector(".hoja");
+    if (!tabla) return;
+    tabla.style.zoom = "";
+    if (window.innerWidth <= 640) return;
+    const k = (caja.clientWidth - 2) / tabla.offsetWidth;
+    if (k < 1) tabla.style.zoom = Math.max(ESCALA_MINIMA, k).toFixed(3);
+  }
+  let tAncho;
+  window.addEventListener("resize", () => { clearTimeout(tAncho); tAncho = setTimeout(ajustarAncho, 120); });
+
   /* En el celular las fichas se deslizan de costado: que la elegida quede a la vista */
   function mostrarElegido(fila) {
     const b = fila && fila.querySelector('[aria-selected="true"], [aria-current="page"]');
