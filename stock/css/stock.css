@@ -460,12 +460,20 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 /* Agregar insumo / ingrediente */
 .costos-agregar { margin: 6px 0 4px; }
 .agregar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 14px 16px; border-radius: var(--radio); background: var(--azul-06); }
-.agregar__tit { flex-basis: 100%; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; }
+.agregar { display: block; }
+.agregar__acciones { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 2px; }
+.agregar__acciones button { flex: none; min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--blanco); font-weight: 700; font-size: 13.5px; color: var(--azul-70); }
+.agregar__acciones button:hover { color: var(--azul); }
+.agregar__acciones button[aria-selected="true"] { background: var(--azul); color: var(--blanco); }
+.agregar__form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; }
+.agregar__form .campo { flex: 1 1 160px; }
+.agregar__form .campo input, .agregar__form .campo select { width: 100%; min-width: 0; }
+.agregar__form .btn { min-height: 46px; }
 .agregar .campo { flex: 1 1 150px; }
 .agregar .campo input, .agregar .campo select { width: 100%; min-width: 0; }
 .agregar .btn { min-height: 46px; }
 .agregar__nota { flex-basis: 100%; font-size: 13px; color: var(--azul-70); }
-@media (max-width: 640px) { .agregar .btn { flex-basis: 100%; } }
+@media (max-width: 640px) { .agregar__form .btn { flex-basis: 100%; } }
 
 /* Gráficos del Tablero */
 .fila-graficos > td { padding: 14px !important; height: auto !important; white-space: normal !important; background: var(--blanco); }

@@ -133,6 +133,7 @@
     hojaActual = h.nombre;
     try { sessionStorage.setItem("penitentia.costos.hoja", h.nombre); } catch { /* nada */ }
     $$("#costos-hojas button").forEach(b => b.setAttribute("aria-current", b.dataset.hoja === h.nombre ? "page" : "false"));
+    mostrarElegido($("#costos-hojas"));
 
     const aj = AJUSTES[h.nombre] || {};
     const ultCol = Math.min(h.cols - 1, aj.hastaCol ?? h.cols - 1);
@@ -193,14 +194,6 @@
 
   /* ---------- Gráficos del Tablero (una sola tonalidad, el azul de la marca, con los valores escritos) ---------- */
   const plata = n => (typeof n === "number" ? "$ " + Math.round(n).toLocaleString("es-AR") : "—");
-  const lista = (hoja, c1, c2, desde, hasta) => {
-    const out = [];
-    for (let r = desde; r <= hasta; r++) {
-      const n = valor(hoja, r, c1), v = valor(hoja, r, c2);
-      if (n !== null && n !== "" && typeof n !== "object") out.push({ n: String(n), v: typeof v === "number" ? v : null });
-    }
-    return out;
-  };
   const tarjeta = (titulo, cuerpo) => `<figure class="grafico"><figcaption>${esc(titulo)}</figcaption>${cuerpo}</figure>`;
   function barras(datos, formato, titulo) {
     const max = Math.max(1, ...datos.map(d => Math.abs(d.v || 0)));
@@ -211,24 +204,36 @@
         <span class="gbarra__v">${esc(formato(d.v))}</span>
       </div>`).join("")}</div>`);
   }
+  /* Los gráficos leen directo de Precios y Rentabilidad, Costos Fijos y Precios Insumos (así incluyen lo que se agregue) */
+  function variedades() {
+    const { h, c2 } = filasRentabilidad();
+    return c2.map(r => ({ n: String(texto(h, r, 0) ?? ""), costo: valor(h.nombre, r, 3), precio: valor(h.nombre, r, 2), margen: valor(h.nombre, r, 4) }))
+      .map(d => Object.fromEntries(Object.entries(d).map(([k, v]) => [k, typeof v === "object" && v ? null : v])));
+  }
   const GRAFICOS = {
     /* Costo y precio de venta de cada pizza: punto hueco = costo, punto lleno = precio; la línea entre los dos es el margen */
-    costoPrecio(h) {
-      const n = lista(h, 13, 14, 1, 7).map((d, i) => ({ ...d, p: valor(h, i + 1, 15) }));
-      const max = Math.max(1, ...n.map(d => Math.max(d.v || 0, typeof d.p === "number" ? d.p : 0)));
+    costoPrecio() {
+      const n = variedades();
+      const max = Math.max(1, ...n.map(d => Math.max(d.costo || 0, d.precio || 0)));
       const x = v => ((v || 0) / max * 100).toFixed(1);
       return tarjeta("Costo vs. precio de venta por pizza", `
         <p class="grafico__ley"><span class="punto punto--hueco"></span>Costo <span class="punto"></span>Precio de venta</p>
         <div class="gbarras">${n.map(d => `
-          <div class="gbarra gbarra--doble" title="${esc(d.n)}: costo ${plata(d.v)}, precio ${plata(d.p)}">
+          <div class="gbarra gbarra--doble" title="${esc(d.n)}: costo ${plata(d.costo)}, precio ${plata(d.precio)}">
             <span class="gbarra__n">${esc(d.n)}</span>
-            <span class="gbarra__pista"><span class="pesa" style="left:${x(d.v)}%;width:${(x(d.p) - x(d.v)).toFixed(1)}%"></span><span class="punto punto--hueco" style="left:${x(d.v)}%"></span><span class="punto" style="left:${x(d.p)}%"></span></span>
-            <span class="gbarra__v">${plata(d.v)} → ${plata(d.p)}</span>
+            <span class="gbarra__pista"><span class="pesa" style="left:${x(d.costo)}%;width:${Math.max(0, x(d.precio) - x(d.costo)).toFixed(1)}%"></span><span class="punto punto--hueco" style="left:${x(d.costo)}%"></span><span class="punto" style="left:${x(d.precio)}%"></span></span>
+            <span class="gbarra__v">${plata(d.costo)} → ${plata(d.precio)}</span>
           </div>`).join("")}</div>`);
     },
-    margen: h => barras(lista(h, 13, 16, 1, 7), plata, "Margen por pizza"),
-    fijos: h => barras(lista(h, 18, 19, 1, 7).sort((a, b) => (b.v || 0) - (a.v || 0)), plata, "Composición de costos fijos mensuales"),
-    insumos: h => barras(lista(h, 20, 21, 1, 3), v => (v ?? "—").toString(), "Cantidad de insumos por categoría"),
+    margen: () => barras(variedades().map(d => ({ n: d.n, v: d.margen })), plata, "Margen por pizza"),
+    fijos: () => {
+      const { h, items } = costosFijos();
+      const C = hojaModelo("Costos Fijos");
+      const filas = [...items];
+      if (C) for (let r = 0; r < C.filas; r++) { const a = C.celdas[dir(r, 0)]; if ((a?.c === "446C55" || a?.c === "3F6B54") && !/TOTAL COSTOS/i.test(String(a.v))) filas.push(r); }
+      return barras(filas.map(r => ({ n: String(texto(h, r, 0) ?? ""), v: valor("Costos Fijos", r, 1) })).map(d => ({ ...d, v: typeof d.v === "number" ? d.v : 0 })).sort((a, b) => b.v - a.v), plata, "Composición de costos fijos mensuales");
+    },
+    insumos: () => barras(seccionesInsumos(hojaModelo("Precios Insumos")).map(s => ({ n: s.nombre.charAt(0) + s.nombre.slice(1).toLowerCase(), v: s.items.length })), v => (v ?? "—").toString(), "Cantidad de insumos por categoría"),
   };
 
   /* ---------- Editar una celda ---------- */
@@ -344,15 +349,103 @@
   window.addEventListener("beforeunload", e => { if ($("#costos-estado").dataset.tipo === "guardando") { e.preventDefault(); e.returnValue = ""; } });
 
   /* =========================================================
-     AGREGAR INSUMOS E INGREDIENTES
-     Se inserta un renglón ANTES del último de la sección o del bloque:
-     así las sumas (SUMA, CONTARA) se agrandan solas, como en Excel
-     cuando insertás una fila dentro del rango.
+     EDITAR LA ESTRUCTURA DESDE LA PÁGINA (sin pasar por Excel)
+     Insumos, ingredientes, recetas nuevas, costos fijos y consumo de
+     limpieza y descartables: agregar, quitar y renombrar.
+     Regla: un renglón nuevo se inserta ANTES del último de su sección o
+     bloque, así SUMA, CONTARA y PROMEDIO lo incluyen solos (como en Excel
+     cuando insertás una fila dentro del rango).
      ========================================================= */
   const hojaModelo = n => modelo.hojas.find(h => h.nombre === n);
+  const sid = h => hf.getSheetId(h.nombre);
   const texto = (h, r, c) => { const x = h.celdas[dir(r, c)]; const v = x ? (x.f ? valor(h.nombre, r, c) : x.v) : null; return typeof v === "string" ? v.trim() : v; };
+  const igual = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase();
 
-  /* Precios Insumos: secciones = renglones con relleno de sección (INGREDIENTES, LIMPIEZA, DESCARTABLES) */
+  /* ----- Operaciones de bajo nivel: el motor corre fórmulas; el modelo corre colores y formatos ----- */
+  function correrModelo(h, desde, n) {
+    const nuevas = {};
+    for (const [a, cel] of Object.entries(h.celdas)) {
+      const { r, c } = XLSX.utils.decode_cell(a);
+      if (n < 0 && r === desde) continue;
+      nuevas[dir(r >= desde + (n < 0 ? 1 : 0) ? r + n : r, c)] = cel;
+    }
+    h.celdas = nuevas;
+    h.merges = h.merges.map(m => {
+      const g = XLSX.utils.decode_range(m);
+      if (n < 0 && g.s.r === desde && g.e.r === desde) return null;
+      if (g.s.r >= desde + (n < 0 ? 1 : 0)) g.s.r += n;
+      if (g.e.r >= desde + (n < 0 ? 1 : 0)) g.e.r += n;
+      return XLSX.utils.encode_range(g);
+    }).filter(Boolean);
+    h.filas += n;
+  }
+  function sincronizarFormulas() {
+    for (const h of modelo.hojas) {
+      const id = sid(h);
+      for (const [a, cel] of Object.entries(h.celdas)) {
+        if (!cel.f) continue;
+        const { r: row, c: col } = XLSX.utils.decode_cell(a);
+        const f = hf.getCellFormula({ sheet: id, row, col });
+        if (f) cel.f = f.slice(1);
+      }
+    }
+  }
+  function insertarFila(h, r) { hf.addRows(sid(h), [r, 1]); correrModelo(h, r, 1); sincronizarFormulas(); }
+  function quitarFila(h, r) { hf.removeRows(sid(h), [r, 1]); correrModelo(h, r, -1); sincronizarFormulas(); }
+
+  /* Lee una celda del motor al modelo, con el color y formato de «estilo» */
+  function tomarDelMotor(h, r, c, estilo) {
+    const s = hf.getCellSerialized({ sheet: sid(h), row: r, col: c });
+    const cel = {};
+    if (typeof s === "string" && s.startsWith("=")) cel.f = s.slice(1); else if (s !== null && s !== undefined && s !== "") cel.v = s;
+    if (estilo?.z) cel.z = estilo.z;
+    if (estilo?.c) cel.c = estilo.c;
+    if (Object.keys(cel).length) h.celdas[dir(r, c)] = cel; else delete h.celdas[dir(r, c)];
+  }
+  function poner(h, r, c, contenidoNuevo) {
+    hf.setCellContents({ sheet: sid(h), row: r, col: c }, [[contenidoNuevo]]);
+    tomarDelMotor(h, r, c, h.celdas[dir(r, c)]);
+  }
+  /* Copia un renglón (columnas c0..c1) con las fórmulas relativas corridas, y pone los valores dados */
+  function copiarFila(h, desde, hacia, valores = {}, c0 = 0, c1 = h.cols - 1) {
+    const id = sid(h);
+    const estilos = {};
+    for (let c = c0; c <= c1; c++) estilos[c] = h.celdas[dir(desde, c)];
+    hf.copy({ start: { sheet: id, row: desde, col: c0 }, end: { sheet: id, row: desde, col: c1 } });
+    hf.paste({ sheet: id, row: hacia, col: c0 });
+    for (let c = c0; c <= c1; c++) {
+      if (c in valores) hf.setCellContents({ sheet: id, row: hacia, col: c }, [[valores[c] === "" ? null : valores[c]]]);
+      tomarDelMotor(h, hacia, c, estilos[c]);
+    }
+  }
+  function vaciar(h, r, c0, c1) {
+    for (let c = c0; c <= c1; c++) { hf.setCellContents({ sheet: sid(h), row: r, col: c }, [[null]]); delete h.celdas[dir(r, c)]; }
+  }
+  /* Rangos de una misma columna que, tras mover celdas, quedaron incluyendo a su propia celda: se cortan antes */
+  function arreglarRangos(h, r0, r1, c0, c1) {
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+      const cel = h.celdas[dir(r, c)];
+      if (!cel?.f) continue;
+      const nueva = cel.f.replace(/(^|[^!'\w$])(\$?)([A-Z]{1,3})(\$?)(\d+):(\$?)([A-Z]{1,3})(\$?)(\d+)/g, (m, pre, d1, c1l, d2, f1, d3, c2l, d4, f2) => {
+        const desde = +f1, hasta = +f2;
+        return desde <= r && hasta >= r + 1 ? `${pre}${d1}${c1l}${d2}${f1}:${d3}${c2l}${d4}${r}` : m;
+      });
+      if (nueva !== cel.f) poner(h, r, c, "=" + normalizar(nueva));
+    }
+  }
+  /* Corre un pedazo de tabla (columnas c0..c1, filas r0..r1) una fila para arriba o para abajo */
+  function correrCeldas(h, c0, c1, r0, r1, n) {
+    const id = sid(h);
+    const estilos = {};
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) estilos[dir(r, c)] = h.celdas[dir(r, c)];
+    hf.moveCells({ start: { sheet: id, row: r0, col: c0 }, end: { sheet: id, row: r1, col: c1 } }, { sheet: id, row: r0 + n, col: c0 });
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) delete h.celdas[dir(r, c)];
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) tomarDelMotor(h, r + n, c, estilos[dir(r, c)]);
+    sincronizarFormulas();
+    arreglarRangos(h, r0 + n, r1 + n, c0, c1);
+  }
+
+  /* ----- Precios Insumos ----- */
   function seccionesInsumos(h) {
     const out = [];
     for (let r = 0; r < h.filas; r++) {
@@ -364,17 +457,61 @@
   }
   function insumosExistentes() {
     const h = hojaModelo("Precios Insumos"); if (!h) return [];
-    return seccionesInsumos(h).flatMap(s => s.items.map(r => ({ nombre: texto(h, r, 0), unidad: texto(h, r, 1) || "", seccion: s.nombre })));
+    return seccionesInsumos(h).flatMap(s => s.items.map(r => ({ nombre: texto(h, r, 0), unidad: texto(h, r, 1) || "", seccion: s.nombre, fila: r })));
+  }
+  /* Dónde se usa un insumo (por nombre: así lo buscan los BUSCARV) */
+  function usosDeInsumo(nombre) {
+    const usos = [];
+    const R = hojaModelo("Recetas");
+    if (R) for (const b of bloquesRecetas(R)) if (b.usados.some(r => igual(texto(R, r, 0), nombre) && !R.celdas[dir(r, 0)].f)) usos.push(b.nombre);
+    const I = hojaModelo("Insumos");
+    if (I) for (const t of tablasConsumo(I)) if (t.items.some(r => igual(texto(I, r, t.c0), nombre))) usos.push(`consumo de ${t.nombre.toLowerCase()}`);
+    for (const h of modelo.hojas) for (const cel of Object.values(h.celdas)) if (cel.f && cel.f.toLowerCase().includes(`"${nombre.toLowerCase()}"`)) { usos.push(`una fórmula de ${h.nombre}`); break; }
+    return [...new Set(usos)];
+  }
+  function agregarInsumo({ nombre, unidad, precio, seccion }) {
+    const h = hojaModelo("Precios Insumos");
+    if (insumosExistentes().some(i => igual(i.nombre, nombre))) throw new Error(`«${nombre}» ya está en la lista.`);
+    const s = seccionesInsumos(h).find(x => x.nombre === seccion);
+    if (!s || !s.items.length) throw new Error("No encontré la sección " + seccion + ".");
+    const ultimo = s.items.at(-1);
+    insertarFila(h, ultimo);
+    copiarFila(h, ultimo + 1, ultimo, { 0: nombre, 1: unidad, 2: precio });
+    return { hoja: h.nombre, fila: ultimo, aviso: `«${nombre}» agregado a ${seccion}. Ya lo podés usar en las recetas.` };
+  }
+  function quitarInsumo({ nombre }) {
+    const h = hojaModelo("Precios Insumos");
+    const i = insumosExistentes().find(x => igual(x.nombre, nombre));
+    if (!i) throw new Error("No encontré ese insumo.");
+    const usos = usosDeInsumo(i.nombre);
+    if (usos.length) throw new Error(`«${i.nombre}» se usa en: ${usos.join(", ")}. Sacalo primero de ahí.`);
+    if (!window.confirm(`¿Quitar «${i.nombre}» de la lista de insumos?`)) return null;
+    quitarFila(h, i.fila);
+    return { hoja: h.nombre, fila: -1, aviso: `«${i.nombre}» quitado de la lista.` };
+  }
+  function renombrarInsumo({ nombre, nuevo }) {
+    const i = insumosExistentes().find(x => igual(x.nombre, nombre));
+    if (!i) throw new Error("No encontré ese insumo.");
+    if (insumosExistentes().some(x => igual(x.nombre, nuevo) && x !== i)) throw new Error(`Ya hay un insumo que se llama «${nuevo}».`);
+    let n = 0;
+    const DONDE = { "Precios Insumos": [0], Recetas: [0], Insumos: [0, 6] };   // sólo columnas de nombres de insumo
+    for (const h of modelo.hojas) for (const [a, cel] of Object.entries(h.celdas)) {
+      const { r, c } = XLSX.utils.decode_cell(a);
+      if (!cel.f && typeof cel.v === "string" && igual(cel.v, i.nombre) && (DONDE[h.nombre] || []).includes(c)) { poner(h, r, c, nuevo); n++; }
+      else if (cel.f && cel.f.includes(`"${i.nombre}"`)) { poner(h, r, c, "=" + normalizar(cel.f.split(`"${i.nombre}"`).join(`"${nuevo}"`))); n++; }
+    }
+    return { hoja: "Precios Insumos", fila: i.fila, aviso: `«${i.nombre}» ahora se llama «${nuevo}» (${n} lugar${n === 1 ? "" : "es"}).` };
   }
 
-  /* Recetas: bloques «Receta: X» hasta «COSTO TOTAL DEL PLATO» */
+  /* ----- Recetas ----- */
   function bloquesRecetas(h) {
     const out = [];
     let actual = null;
     for (let r = 0; r < h.filas; r++) {
-      const a = texto(h, r, 0);
-      if (typeof a === "string" && /Receta:/i.test(a) && !h.celdas[dir(r, 0)].f) actual = { nombre: a.split(/Receta:/i)[1].trim(), titulo: r, desde: r + 3 };
-      else if (actual && typeof a === "string" && /COSTO TOTAL DEL PLATO/i.test(a)) { actual.hasta = r - 1; actual.total = r; out.push(actual); actual = null; }
+      const x = h.celdas[dir(r, 0)];
+      const a = x && !x.f && typeof x.v === "string" ? x.v : "";
+      if (/Receta:/i.test(a)) actual = { nombre: a.split(/Receta:/i)[1].trim(), titulo: r, desde: r + 3 };
+      else if (actual && /COSTO TOTAL DEL PLATO/i.test(a)) { actual.hasta = r - 1; actual.total = r; out.push(actual); actual = null; }
     }
     for (const b of out) {
       b.libres = []; b.molde = null; b.usados = [];
@@ -382,166 +519,356 @@
         const [xa, xc, xf] = [0, 2, 5].map(c => h.celdas[dir(r, c)]);
         const vacia = [xa, xc, xf].every(x => !x || (!x.f && (x.v === undefined || x.v === null || x.v === "")));
         if (vacia) b.libres.push(r); else b.usados.push(r);
-        if (xc && xc.f && /VLOOKUP/i.test(xc.f)) b.molde = r;   // el último renglón «normal» sirve de molde
+        if (xc && xc.f && /VLOOKUP/i.test(xc.f)) b.molde = r;
       }
     }
     return out;
   }
-
-  /* Inserta un renglón vacío en la posición r de la hoja (el motor corre fórmulas y rangos; el modelo corre estilos) */
-  function insertarFila(h, r) {
-    hf.addRows(hf.getSheetId(h.nombre), [r, 1]);
-    const nuevas = {};
+  const filaRef = r => new RegExp(`(^|[^0-9])\\$?A\\$${r + 1}$`);
+  /* Renglones de otras recetas que copian este ingrediente de la base (=$A$31) */
+  function vinculadas(h, r) {
+    const out = [];
     for (const [a, cel] of Object.entries(h.celdas)) {
-      const { r: f, c } = XLSX.utils.decode_cell(a);
-      nuevas[dir(f >= r ? f + 1 : f, c)] = cel;
+      const p = XLSX.utils.decode_cell(a);
+      if (p.c === 0 && cel.f && filaRef(r).test(cel.f.trim())) out.push(p.r);
     }
-    h.celdas = nuevas;
-    h.merges = h.merges.map(m => {
-      const g = XLSX.utils.decode_range(m);
-      if (g.s.r >= r) g.s.r++;
-      if (g.e.r >= r) g.e.r++;
-      return XLSX.utils.encode_range(g);
-    });
-    h.filas++;
-    sincronizarFormulas();
+    return out;
   }
-  /* Después de insertar, las fórmulas de todas las hojas se toman del motor (ya corregidas) */
-  function sincronizarFormulas() {
-    for (const h of modelo.hojas) {
-      const id = hf.getSheetId(h.nombre);
-      for (const [a, cel] of Object.entries(h.celdas)) {
-        if (!cel.f) continue;
-        const { r: row, c: col } = XLSX.utils.decode_cell(a);
-        const f = hf.getCellFormula({ sheet: id, row, col });
-        if (f) cel.f = f.slice(1);
-      }
-    }
-  }
-  /* Copia un renglón (fórmulas relativas corridas por el motor) y le pone los valores dados por columna */
-  function copiarFila(h, desde, hacia, valores) {
-    const id = hf.getSheetId(h.nombre);
-    const ultima = h.cols - 1;
-    hf.copy({ start: { sheet: id, row: desde, col: 0 }, end: { sheet: id, row: desde, col: ultima } });
-    hf.paste({ sheet: id, row: hacia, col: 0 });
-    for (let c = 0; c <= ultima; c++) {
-      const origen = h.celdas[dir(desde, c)];
-      const s = hf.getCellSerialized({ sheet: id, row: hacia, col: c });
-      const cel = {};
-      if (typeof s === "string" && s.startsWith("=")) cel.f = s.slice(1); else if (s !== null && s !== undefined && s !== "") cel.v = s;
-      if (origen?.z) cel.z = origen.z;
-      if (origen?.c) cel.c = origen.c;
-      if (c in valores) { delete cel.f; delete cel.v; if (valores[c] !== null && valores[c] !== "") cel.v = valores[c]; }
-      if (Object.keys(cel).length) h.celdas[dir(hacia, c)] = cel; else delete h.celdas[dir(hacia, c)];
-      if (c in valores) hf.setCellContents({ sheet: id, row: hacia, col: c }, [[cel.v ?? null]]);
-    }
-  }
-
-  function agregarInsumo({ nombre, unidad, precio, seccion }) {
-    const h = hojaModelo("Precios Insumos");
-    if (insumosExistentes().some(i => i.nombre.toLowerCase() === nombre.toLowerCase())) throw new Error(`«${nombre}» ya está en la lista.`);
-    const s = seccionesInsumos(h).find(x => x.nombre === seccion);
-    if (!s || !s.items.length) throw new Error("No encontré la sección " + seccion + ".");
-    const ultimo = s.items.at(-1);
-    insertarFila(h, ultimo);                       // queda vacío en «ultimo»; el que era último baja uno
-    copiarFila(h, ultimo + 1, ultimo, { 0: nombre, 1: unidad, 2: precio });
-    return { hoja: h.nombre, fila: ultimo };
-  }
-
   function agregarIngrediente({ receta, insumo, cantidad, merma }) {
     const h = hojaModelo("Recetas");
     const b = bloquesRecetas(h).find(x => x.nombre === receta);
     if (!b) throw new Error("No encontré la receta " + receta + ".");
     if (b.molde === null) throw new Error("Esa receta no tiene un renglón de ingrediente para copiar.");
-    for (const r of b.usados) if (String(texto(h, r, 0) || "").toLowerCase() === insumo.nombre.toLowerCase()) throw new Error(`«${insumo.nombre}» ya está en ${receta}.`);
-    let fila = b.libres[0];
-    let molde = b.molde;
-    if (fila === undefined) {                      // sin renglones libres: se inserta antes del último
-      fila = b.hasta;
-      insertarFila(h, fila);
-      if (molde >= fila) molde++;
-    }
-    copiarFila(h, molde, fila, { 0: insumo.nombre, 1: insumo.unidad, 3: cantidad, 4: merma });
-    return { hoja: h.nombre, fila };
+    for (const r of b.usados) if (igual(texto(h, r, 0), insumo.nombre)) throw new Error(`«${insumo.nombre}» ya está en ${receta}.`);
+    let fila = b.libres[0], molde = b.molde;
+    if (fila === undefined) { fila = b.hasta; insertarFila(h, fila); if (molde >= fila) molde++; }
+    copiarFila(h, molde, fila, { 0: insumo.nombre, 1: insumo.unidad, 3: cantidad, 4: merma }, 0, 11);
+    return { hoja: h.nombre, fila, aviso: `${insumo.nombre} agregado a ${receta}. Costos y precios recalculados.` };
+  }
+  function ingredientesDe(receta) {
+    const h = hojaModelo("Recetas");
+    const b = bloquesRecetas(h).find(x => x.nombre === receta);
+    return b ? b.usados.map(r => ({ fila: r, nombre: String(texto(h, r, 0) ?? ""), base: !!h.celdas[dir(r, 0)]?.f })) : [];
+  }
+  function quitarIngrediente({ receta, fila }) {
+    const h = hojaModelo("Recetas");
+    const bloques = bloquesRecetas(h);
+    const xa = h.celdas[dir(fila, 0)];
+    /* Si es una copia de la base (=$A$31) se quita sólo de esta receta; si es la base, de todas las que la copian */
+    const filas = xa?.f ? [fila] : [fila, ...vinculadas(h, fila)];
+    const base = fila;
+    const recetas = [...new Set(filas.map(r => (bloques.find(b => r >= b.desde && r <= b.hasta) || {}).nombre).filter(Boolean))];
+    const nombre = texto(h, base, 0);
+    const msj = recetas.length > 1
+      ? `«${nombre}» es parte de la base que comparten ${recetas.length} recetas (${recetas.join(", ")}).\n\n¿Quitarlo de todas?`
+      : `¿Quitar «${nombre}» de ${receta}?`;
+    if (!window.confirm(msj)) return null;
+    for (const r of filas) vaciar(h, r, 0, 11);   // el renglón queda libre para otro ingrediente
+    return { hoja: h.nombre, fila: -1, aviso: `«${nombre}» quitado de ${recetas.length > 1 ? recetas.length + " recetas" : receta}.` };
   }
 
-  /* ---------- Formularios ---------- */
+  /* Filas de Precios y Rentabilidad que muestran cada receta (por la fórmula que apunta a su total) */
+  function filasRentabilidad(totalFila) {
+    const h = hojaModelo("Precios y Rentabilidad"); if (!h) return { h, c1: [], c2: [], propias: [] };
+    const c1 = [], c2 = [], propias = [];
+    for (let r = 0; r < h.filas; r++) {
+      const b = h.celdas[dir(r, 1)], d = h.celdas[dir(r, 3)];
+      if (b?.f && /^Recetas!\$?F\$?\d+$/.test(b.f)) { c1.push(r); if (totalFila !== undefined && +b.f.match(/\d+$/)[0] === totalFila + 1) propias.push(r); }
+      if (d?.f && /^Recetas!\$?F\$?\d+$/.test(d.f)) { c2.push(r); if (totalFila !== undefined && +d.f.match(/\d+$/)[0] === totalFila + 1) propias.push(r); }
+    }
+    return { h, c1, c2, propias };
+  }
+  /* Corre las referencias fijas ($) que apuntan adentro del bloque copiado */
+  function correrFijas(f, r0, r1, n) {
+    return f.split(/("[^"]*"|'[^']*'![$A-Z0-9:]+|[A-Za-z]+![$A-Z0-9:]+)/).map((t, i) => (i % 2 ? t : t.replace(/(\$?[A-Z]{1,3})\$(\d+)/g, (m, col, fila) => (+fila >= r0 + 1 && +fila <= r1 + 1 ? `${col}$${+fila + n}` : m)))).join("");
+  }
+  function nuevaReceta({ nombre, copiarDe }) {
+    const h = hojaModelo("Recetas");
+    const bloques = bloquesRecetas(h);
+    if (bloques.some(b => igual(b.nombre, nombre))) throw new Error(`Ya hay una receta «${nombre}».`);
+    const src = bloques.find(b => b.nombre === copiarDe);
+    if (!src) throw new Error("Elegí de qué receta copiar.");
+    const ultima = bloques.at(-1);
+    const destino = Math.max(ultima.total, h.filas - 1) + 6;
+    const n = destino - src.titulo;
+    const id = sid(h);
+    hf.copy({ start: { sheet: id, row: src.titulo, col: 0 }, end: { sheet: id, row: src.total, col: 11 } });
+    hf.paste({ sheet: id, row: destino, col: 0 });
+    for (let r = src.titulo; r <= src.total; r++) for (let c = 0; c <= 11; c++) {
+      const s = hf.getCellSerialized({ sheet: id, row: r + n, col: c });
+      if (typeof s === "string" && s.startsWith("=")) { const f = correrFijas(s.slice(1), src.titulo, src.total, n); if (f !== s.slice(1)) hf.setCellContents({ sheet: id, row: r + n, col: c }, [["=" + f]]); }
+      tomarDelMotor(h, r + n, c, h.celdas[dir(r, c)]);
+    }
+    for (const m of h.merges.slice()) { const g = XLSX.utils.decode_range(m); if (g.s.r >= src.titulo && g.e.r <= src.total) { g.s.r += n; g.e.r += n; h.merges.push(XLSX.utils.encode_range(g)); } }
+    h.filas = Math.max(h.filas, src.total + n + 1);
+    poner(h, destino, 0, `PENITENTIA  -  Receta: ${nombre}`);
+    const total = src.total + n;
+    /* Una fila en cada cuadro de Precios y Rentabilidad, antes de la última (así PROMEDIO la incluye) */
+    for (const cuadro of ["c1", "c2"]) {
+      const { h: P, [cuadro]: filas } = filasRentabilidad();
+      if (!filas.length) continue;
+      const ult = filas.at(-1);
+      insertarFila(P, ult);
+      copiarFila(P, ult + 1, ult, {}, 0, P.cols - 1);
+      poner(P, ult, 0, nombre);
+      for (const c of [1, 3]) {
+        const cel = P.celdas[dir(ult, c)];
+        if (cel?.f) poner(P, ult, c, "=" + cel.f.replace(/^(Recetas!\$?F\$?)\d+/, `$1${total + 1}`));
+      }
+    }
+    return { hoja: h.nombre, fila: destino, aviso: `Receta «${nombre}» creada a partir de ${copiarDe}. Ajustá sus ingredientes abajo de todo en Recetas; ya figura en Precios y Rentabilidad.` };
+  }
+  function renombrarReceta({ receta, nuevo }) {
+    const h = hojaModelo("Recetas");
+    const bloques = bloquesRecetas(h);
+    const b = bloques.find(x => x.nombre === receta);
+    if (!b) throw new Error("No encontré la receta.");
+    if (bloques.some(x => x !== b && igual(x.nombre, nuevo))) throw new Error(`Ya hay una receta «${nuevo}».`);
+    const titulo = String(h.celdas[dir(b.titulo, 0)].v);
+    poner(h, b.titulo, 0, titulo.replace(/(Receta:\s*).*/i, `$1${nuevo}`));
+    const { h: P, propias } = filasRentabilidad(b.total);
+    for (const r of propias) poner(P, r, 0, nuevo);
+    return { hoja: h.nombre, fila: b.titulo, aviso: `«${receta}» ahora se llama «${nuevo}».` };
+  }
+  function quitarReceta({ receta }) {
+    const h = hojaModelo("Recetas");
+    const bloques = bloquesRecetas(h);
+    const b = bloques.find(x => x.nombre === receta);
+    if (!b) throw new Error("No encontré la receta.");
+    for (let r = b.desde; r <= b.hasta; r++) if (vinculadas(h, r).some(v => v < b.desde || v > b.hasta)) throw new Error(`«${receta}» es la base de otras recetas; no se puede quitar.`);
+    if (!window.confirm(`¿Quitar la receta «${receta}» y sus filas en Precios y Rentabilidad?`)) return null;
+    const { h: P, propias } = filasRentabilidad(b.total);
+    for (const r of propias.sort((x, y) => y - x)) quitarFila(P, r);
+    for (let r = b.total + 5; r >= b.titulo; r--) if (r < h.filas && (r <= b.total || !Object.keys(h.celdas).some(a => XLSX.utils.decode_cell(a).r === r))) quitarFila(h, r);
+    return { hoja: h.nombre, fila: -1, aviso: `Receta «${receta}» quitada.` };
+  }
+
+  /* ----- Costos Fijos ----- */
+  function costosFijos() {
+    const h = hojaModelo("Costos Fijos"); if (!h) return { h, items: [], primerTotal: -1 };
+    const items = []; let primerTotal = -1;
+    for (let r = 0; r < h.filas; r++) {
+      const a = h.celdas[dir(r, 0)], b = h.celdas[dir(r, 1)];
+      if (a?.c === "446C55" || a?.c === "3F6B54") { if (primerTotal < 0) primerTotal = r; continue; }
+      if (primerTotal < 0 && a && typeof a.v === "string" && b && !b.f && typeof b.v === "number") items.push(r);
+    }
+    return { h, items, primerTotal };
+  }
+  function agregarCostoFijo({ nombre, monto }) {
+    const { h, items, primerTotal } = costosFijos();
+    if (!items.length || primerTotal < 0) throw new Error("No encontré la lista de costos fijos.");
+    if (items.some(r => igual(texto(h, r, 0), nombre))) throw new Error(`Ya hay un costo fijo «${nombre}».`);
+    insertarFila(h, primerTotal);   // queda entre el último concepto y «Total Limpieza», dentro de la SUMA
+    copiarFila(h, items.at(-1), primerTotal, { 0: nombre, 1: monto }, 0, h.cols - 1);
+    return { hoja: h.nombre, fila: primerTotal, aviso: `«${nombre}» agregado a los costos fijos.` };
+  }
+  function quitarCostoFijo({ fila }) {
+    const { h } = costosFijos();
+    const n = texto(h, fila, 0);
+    if (!window.confirm(`¿Quitar «${n}» de los costos fijos?`)) return null;
+    quitarFila(h, fila);
+    return { hoja: h.nombre, fila: -1, aviso: `«${n}» quitado de los costos fijos.` };
+  }
+  function renombrarCostoFijo({ fila, nuevo }) {
+    const { h } = costosFijos();
+    const n = texto(h, fila, 0);
+    poner(h, fila, 0, nuevo);
+    return { hoja: h.nombre, fila, aviso: `«${n}» ahora se llama «${nuevo}».` };
+  }
+
+  /* ----- Insumos: consumo mensual de limpieza y descartables (dos tablas lado a lado) ----- */
+  function tablasConsumo(h) {
+    const out = [];
+    for (const c0 of [0, 6]) {
+      let cab = -1, total = -1; const items = [];
+      for (let r = 0; r < h.filas; r++) {
+        const x = h.celdas[dir(r, c0)];
+        if (!x) continue;
+        if (x.c === "254B6E" && cab < 0) { cab = r; continue; }
+        if (cab >= 0 && typeof x.v === "string" && /^TOTAL/i.test(x.v.trim())) { total = r; break; }
+        if (cab >= 0 && typeof x.v === "string" && x.v.trim()) items.push(r);
+      }
+      const titulo = String(texto(h, 0, c0) || "");
+      if (cab >= 0 && total >= 0) out.push({ nombre: /descart/i.test(titulo) ? "Descartables" : "Limpieza", c0, c1: c0 + 4, cab, total, items });
+    }
+    return out;
+  }
+  function agregarConsumo({ tabla, insumo, cantidad }) {
+    const h = hojaModelo("Insumos");
+    const tablas = tablasConsumo(h);
+    const t = tablas.find(x => x.nombre === tabla);
+    if (!t || !t.items.length) throw new Error("No encontré la tabla " + tabla + ".");
+    if (t.items.some(r => igual(texto(h, r, t.c0), insumo.nombre))) throw new Error(`«${insumo.nombre}» ya está en ${tabla}.`);
+    const ultimo = t.items.at(-1);
+    insertarFila(h, ultimo);
+    /* La otra tabla quedó con un renglón vacío en el medio: se sube lo que está debajo */
+    for (const o of tablas) {
+      if (o === t || o.total + 1 <= ultimo) continue;
+      correrCeldas(h, o.c0, o.c1, ultimo + 1, o.total + 1, -1);
+    }
+    copiarFila(h, ultimo + 1, ultimo, { [t.c0]: insumo.nombre, [t.c0 + 1]: insumo.unidad, [t.c0 + 3]: cantidad }, t.c0, t.c1);
+    return { hoja: h.nombre, fila: ultimo, aviso: `${insumo.nombre} agregado al consumo de ${tabla.toLowerCase()}. Costos fijos recalculados.` };
+  }
+  function quitarConsumo({ tabla, fila }) {
+    const h = hojaModelo("Insumos");
+    const t = tablasConsumo(h).find(x => x.nombre === tabla);
+    const n = texto(h, fila, t.c0);
+    if (!window.confirm(`¿Quitar «${n}» del consumo de ${tabla.toLowerCase()}?`)) return null;
+    vaciar(h, fila, t.c0, t.c1);
+    correrCeldas(h, t.c0, t.c1, fila + 1, t.total, -1);
+    return { hoja: h.nombre, fila: -1, aviso: `«${n}» quitado del consumo de ${tabla.toLowerCase()}.` };
+  }
+
+  /* ----- Formularios: una barra de acciones por pestaña ----- */
+  const opciones = (lista, valor = x => x, etiqueta = x => x) => lista.map(x => `<option value="${esc(valor(x))}">${esc(etiqueta(x))}</option>`).join("");
+  const campo = (rotulo, control) => `<label class="campo campo--linea"><span>${rotulo}</span>${control}</label>`;
+  const ACCIONES = {
+    "Precios Insumos": {
+      agregar: ["Agregar insumo", () => {
+        const secs = seccionesInsumos(hojaModelo("Precios Insumos")).map(s => s.nombre);
+        return campo("Nombre", `<input name="nombre" maxlength="60" placeholder="Ej. Rúcula">`) + campo("Sección", `<select name="seccion">${opciones(secs)}</select>`) +
+          campo("Unidad", `<input name="unidad" list="costos-unidades" maxlength="30" placeholder="Kg">`) + campo("Precio de compra $", `<input name="precio" inputmode="decimal" placeholder="0">`);
+      }, f => agregarInsumo({ nombre: nombreDe(f.nombre), seccion: f.seccion.value, unidad: f.unidad.value.trim() || "Unidad", precio: numeroObligatorio(f.precio, "el precio de compra", true) })],
+      renombrar: ["Renombrar", () => campo("Insumo", `<select name="insumo">${opciones(insumosExistentes(), i => i.nombre, i => i.nombre)}</select>`) + campo("Nombre nuevo", `<input name="nuevo" maxlength="60">`),
+        f => renombrarInsumo({ nombre: f.insumo.value, nuevo: nombreDe(f.nuevo) })],
+      quitar: ["Quitar", () => campo("Insumo", `<select name="insumo">${opciones(insumosExistentes(), i => i.nombre, i => i.nombre)}</select>`), f => quitarInsumo({ nombre: f.insumo.value })],
+    },
+    Recetas: {
+      agregar: ["Agregar ingrediente", () => {
+        const ins = insumosExistentes().filter(i => /INGREDIENTE/i.test(i.seccion));
+        return campo("Receta", `<select name="receta">${opciones(bloquesRecetas(hojaModelo("Recetas")).map(b => b.nombre))}</select>`) +
+          campo("Insumo", `<select name="insumo">${opciones(ins, i => i.nombre, i => `${i.nombre} (${i.unidad || "—"})`)}</select>`) +
+          campo("Cantidad por pizza", `<input name="cantidad" inputmode="decimal" placeholder="Ej. 0,05">`) + campo("Merma %", `<input name="merma" inputmode="decimal" placeholder="0">`) +
+          `<p class="agregar__nota">La cantidad va en la unidad del insumo: 0,05 Kg son 50 g. ¿No está el insumo? Agregalo primero en Precios Insumos.</p>`;
+      }, f => {
+        const insumo = insumosExistentes().find(i => i.nombre === f.insumo.value);
+        if (!insumo) throw new Error("Elegí un insumo.");
+        let merma = numeroEs(f.merma.value) ?? 0;
+        if (Number.isNaN(merma) || merma < 0) { f.merma.focus(); throw new Error("La merma tiene que ser un número (por ejemplo 5)."); }
+        if (merma >= 1) merma /= 100;
+        return agregarIngrediente({ receta: f.receta.value, insumo, cantidad: numeroObligatorio(f.cantidad, "la cantidad por pizza"), merma });
+      }],
+      quitar: ["Quitar ingrediente", () => {
+        const recetas = bloquesRecetas(hojaModelo("Recetas")).map(b => b.nombre);
+        return campo("Receta", `<select name="receta" data-recarga>${opciones(recetas)}</select>`) +
+          campo("Ingrediente", `<select name="fila">${opciones(ingredientesDe(recetas[0]), i => i.fila, i => i.nombre + (i.base ? " (base)" : ""))}</select>`);
+      }, f => quitarIngrediente({ receta: f.receta.value, fila: +f.fila.value })],
+      nueva: ["Nueva receta", () => campo("Nombre", `<input name="nombre" maxlength="50" placeholder="Ej. Cuatro quesos">`) +
+        campo("Copiar de", `<select name="copiarDe">${opciones(bloquesRecetas(hojaModelo("Recetas")).map(b => b.nombre))}</select>`) +
+        `<p class="agregar__nota">Se copia la receta elegida con sus ingredientes; después cambiás cantidades, agregás o quitás. Aparece sola en Precios y Rentabilidad y en el Tablero.</p>`,
+        f => nuevaReceta({ nombre: nombreDe(f.nombre), copiarDe: f.copiarDe.value })],
+      renombrar: ["Renombrar receta", () => campo("Receta", `<select name="receta">${opciones(bloquesRecetas(hojaModelo("Recetas")).map(b => b.nombre))}</select>`) + campo("Nombre nuevo", `<input name="nuevo" maxlength="50">`),
+        f => renombrarReceta({ receta: f.receta.value, nuevo: nombreDe(f.nuevo) })],
+      quitarReceta: ["Quitar receta", () => campo("Receta", `<select name="receta">${opciones(bloquesRecetas(hojaModelo("Recetas")).map(b => b.nombre))}</select>`),
+        f => quitarReceta({ receta: f.receta.value })],
+    },
+    "Costos Fijos": {
+      agregar: ["Agregar costo fijo", () => campo("Concepto", `<input name="nombre" maxlength="60" placeholder="Ej. Seguro">`) + campo("Monto mensual $", `<input name="monto" inputmode="decimal" placeholder="0">`),
+        f => agregarCostoFijo({ nombre: nombreDe(f.nombre), monto: numeroObligatorio(f.monto, "el monto mensual", true) })],
+      renombrar: ["Renombrar", () => { const { h, items } = costosFijos(); return campo("Concepto", `<select name="fila">${opciones(items, r => r, r => texto(h, r, 0))}</select>`) + campo("Nombre nuevo", `<input name="nuevo" maxlength="60">`); },
+        f => renombrarCostoFijo({ fila: +f.fila.value, nuevo: nombreDe(f.nuevo) })],
+      quitar: ["Quitar", () => { const { h, items } = costosFijos(); return campo("Concepto", `<select name="fila">${opciones(items, r => r, r => texto(h, r, 0))}</select>`); },
+        f => quitarCostoFijo({ fila: +f.fila.value })],
+    },
+    Insumos: {
+      agregar: ["Agregar al consumo mensual", () => {
+        const ts = tablasConsumo(hojaModelo("Insumos")).map(t => t.nombre);
+        const ins = insumosExistentes().filter(i => !/INGREDIENTE/i.test(i.seccion));
+        return campo("Tabla", `<select name="tabla">${opciones(ts)}</select>`) + campo("Artículo", `<select name="insumo">${opciones(ins, i => i.nombre, i => `${i.nombre} (${i.seccion.toLowerCase()})`)}</select>`) +
+          campo("Consumo mensual", `<input name="cantidad" inputmode="decimal" placeholder="1">`) + `<p class="agregar__nota">El artículo tiene que estar en Precios Insumos (Limpieza o Descartables).</p>`;
+      }, f => {
+        const insumo = insumosExistentes().find(i => i.nombre === f.insumo.value);
+        if (!insumo) throw new Error("Elegí un artículo.");
+        return agregarConsumo({ tabla: f.tabla.value, insumo, cantidad: numeroObligatorio(f.cantidad, "el consumo mensual") });
+      }],
+      quitar: ["Quitar del consumo", () => {
+        const h = hojaModelo("Insumos");
+        const items = tablasConsumo(h).flatMap(t => t.items.map(r => ({ v: `${t.nombre}|${r}`, n: `${texto(h, r, t.c0)} (${t.nombre.toLowerCase()})` })));
+        return campo("Artículo", `<select name="articulo">${opciones(items, i => i.v, i => i.n)}</select>`);
+      }, f => { const [tabla, fila] = f.articulo.value.split("|"); return quitarConsumo({ tabla, fila: +fila }); }],
+    },
+  };
+  const nombreDe = inp => { const v = inp.value.trim().replace(/\s+/g, " "); if (!v) { inp.focus(); throw new Error("Escribí el nombre."); } return v; };
+  const numeroEs = t => { const s = String(t || "").trim().replace(/\$/g, "").replace(/\s/g, ""); if (!s) return null; const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s); return Number.isNaN(n) ? NaN : n; };
+  function numeroObligatorio(inp, que, ceroVale = false) {
+    const n = numeroEs(inp.value);
+    if (n === null || Number.isNaN(n) || n < 0 || (!ceroVale && n === 0)) { inp.focus(); throw new Error(`Escribí ${que} (por ejemplo 1500 o 0,05).`); }
+    return n;
+  }
+
+  let accionActual = {};
   function pintarAgregar(nombreHoja) {
     const caja = $("#costos-agregar");
-    if (nombreHoja === "Precios Insumos") {
-      const secs = seccionesInsumos(hojaModelo(nombreHoja)).map(s => s.nombre);
-      caja.innerHTML = `
-        <form class="agregar" data-agregar="insumo" novalidate>
-          <p class="agregar__tit">Agregar insumo</p>
-          <label class="campo campo--linea"><span>Nombre</span><input name="nombre" required maxlength="60" placeholder="Ej. Rúcula"></label>
-          <label class="campo campo--linea"><span>Sección</span><select name="seccion">${secs.map(s => `<option>${esc(s)}</option>`).join("")}</select></label>
-          <label class="campo campo--linea"><span>Unidad</span><input name="unidad" list="costos-unidades" maxlength="30" placeholder="Kg"></label>
-          <label class="campo campo--linea"><span>Precio de compra $</span><input name="precio" inputmode="decimal" placeholder="0"></label>
-          <button class="btn btn--azul" type="submit">Agregar</button>
-          <datalist id="costos-unidades"><option>Kg</option><option>L</option><option>Unidad</option><option>Pack x 3</option><option>Bidón 5 L</option><option>Rollo</option></datalist>
-        </form>`;
-    } else if (nombreHoja === "Recetas") {
-      const bloques = bloquesRecetas(hojaModelo(nombreHoja));
-      const ins = insumosExistentes().filter(i => /INGREDIENTE/i.test(i.seccion));
-      caja.innerHTML = `
-        <form class="agregar" data-agregar="ingrediente" novalidate>
-          <p class="agregar__tit">Agregar ingrediente a una receta</p>
-          <label class="campo campo--linea"><span>Receta</span><select name="receta">${bloques.map(b => `<option>${esc(b.nombre)}</option>`).join("")}</select></label>
-          <label class="campo campo--linea"><span>Insumo</span><select name="insumo">${ins.map(i => `<option value="${esc(i.nombre)}">${esc(i.nombre)} (${esc(i.unidad || "—")})</option>`).join("")}</select></label>
-          <label class="campo campo--linea"><span>Cantidad por pizza</span><input name="cantidad" inputmode="decimal" placeholder="Ej. 0,05"></label>
-          <label class="campo campo--linea"><span>Merma %</span><input name="merma" inputmode="decimal" placeholder="0"></label>
-          <button class="btn btn--azul" type="submit">Agregar</button>
-          <p class="agregar__nota">La cantidad va en la unidad del insumo: 0,05 Kg son 50 g. ¿No está el insumo? Agregalo primero en Precios Insumos.</p>
-        </form>`;
-    } else { caja.innerHTML = ""; }
-    caja.hidden = !caja.innerHTML;
+    const acc = ACCIONES[nombreHoja];
+    if (!acc) { caja.innerHTML = ""; caja.hidden = true; return; }
+    const clave = acc[accionActual[nombreHoja]] ? accionActual[nombreHoja] : Object.keys(acc)[0];
+    accionActual[nombreHoja] = clave;
+    let cuerpo;
+    try { cuerpo = acc[clave][1](); } catch { cuerpo = `<p class="agregar__nota">Esta pestaña no tiene la forma que espera esta acción.</p>`; }
+    caja.innerHTML = `
+      <div class="agregar">
+        <div class="agregar__acciones" role="tablist" aria-label="Qué querés hacer">${Object.entries(acc).map(([k, [t]]) => `<button type="button" role="tab" data-accion-costos="${k}" aria-selected="${k === clave}">${esc(t)}</button>`).join("")}</div>
+        <form class="agregar__form" data-accion="${clave}" novalidate>${cuerpo}<button class="btn btn--azul" type="submit">${esc(acc[clave][0])}</button></form>
+      </div>
+      <datalist id="costos-unidades"><option>Kg</option><option>L</option><option>Unidad</option><option>Pack x 3</option><option>Bidón 5 L</option><option>Rollo</option></datalist>`;
+    caja.hidden = false;
+    mostrarElegido(caja.querySelector(".agregar__acciones"));
+  }
+  /* En el celular las fichas se deslizan de costado: que la elegida quede a la vista */
+  function mostrarElegido(fila) {
+    const b = fila && fila.querySelector('[aria-selected="true"], [aria-current="page"]');
+    if (b && fila.scrollWidth > fila.clientWidth) fila.scrollLeft = Math.max(0, b.offsetLeft - fila.offsetLeft - 16);
   }
 
-  const numeroEs = t => { const s = String(t || "").trim().replace(/\$/g, "").replace(/\s/g, ""); if (!s) return null; const n = Number(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(s) ? s.replace(/\./g, "") : s); return Number.isNaN(n) ? NaN : n; };
-
+  $("#costos-agregar").addEventListener("click", e => {
+    const b = e.target.closest("[data-accion-costos]");
+    if (!b) return;
+    accionActual[hojaActual] = b.dataset.accionCostos;
+    pintarAgregar(hojaActual);
+    const primero = $("#costos-agregar form input, #costos-agregar form select"); if (primero) primero.focus();
+  });
+  /* Quitar ingrediente: al cambiar la receta se actualiza la lista de ingredientes */
+  $("#costos-agregar").addEventListener("change", e => {
+    if (!e.target.matches("[data-recarga]")) return;
+    const sel = e.target.form.fila;
+    sel.innerHTML = opciones(ingredientesDe(e.target.value), i => i.fila, i => i.nombre + (i.base ? " (base)" : ""));
+  });
   $("#costos-agregar").addEventListener("submit", e => {
     e.preventDefault();
-    const f = e.target, tipo = f.dataset.agregar;
-    const hAntes = hojaModelo(tipo === "insumo" ? "Precios Insumos" : "Recetas");
-    const antes = foto(hAntes), filasAntes = hAntes.filas;
+    const f = e.target;
+    const acc = ACCIONES[hojaActual][f.dataset.accion];
     let res;
-    try {
-      if (tipo === "insumo") {
-        const nombre = f.nombre.value.trim().replace(/\s+/g, " ");
-        const precio = numeroEs(f.precio.value);
-        if (!nombre) { f.nombre.focus(); throw new Error("Escribí el nombre del insumo."); }
-        if (precio === null || Number.isNaN(precio) || precio < 0) { f.precio.focus(); throw new Error("Escribí el precio de compra (por ejemplo 5000 o 5.000,50)."); }
-        res = agregarInsumo({ nombre, unidad: f.unidad.value.trim() || "Unidad", precio, seccion: f.seccion.value });
-        avisar(`«${nombre}» agregado a ${f.seccion.value}. Ya lo podés usar en las recetas.`);
-      } else {
-        const insumo = insumosExistentes().find(i => i.nombre === f.insumo.value);
-        const cantidad = numeroEs(f.cantidad.value);
-        let merma = numeroEs(f.merma.value) ?? 0;
-        if (!insumo) throw new Error("Elegí un insumo.");
-        if (cantidad === null || Number.isNaN(cantidad) || cantidad <= 0) { f.cantidad.focus(); throw new Error("Escribí la cantidad por pizza (por ejemplo 0,05)."); }
-        if (Number.isNaN(merma) || merma < 0) { f.merma.focus(); throw new Error("La merma tiene que ser un número (por ejemplo 5)."); }
-        if (merma >= 1) merma = merma / 100;
-        res = agregarIngrediente({ receta: f.receta.value, insumo, cantidad, merma });
-        avisar(`${insumo.nombre} agregado a ${f.receta.value}. Costos y precios recalculados.`);
-      }
-    } catch (err) { avisar(err.message); return; }
+    try { res = acc[2](f); } catch (err) { avisar(err.message); return; }
+    if (!res) return;   // cancelado
+    sincronizarFormulas();
     fotosOtras = null; cambiosEnOtrasHojas("");
-    const h = hojaModelo(res.hoja);
-    const despues = foto(h);
-    /* Se resalta el renglón nuevo y, si no se corrieron filas, también lo que se recalculó */
-    const corrida = h.filas !== filasAntes;
-    const nuevas = new Set([...despues.keys()].filter(k => XLSX.utils.decode_cell(k).r === res.fila || (!corrida && despues.get(k) !== antes.get(k))));
     formularioDe = null;
-    dibujarHoja(res.hoja, { marcarCambios: nuevas });
-    const td = $(`#costos-hoja td.c-cambio`); if (td) td.scrollIntoView({ block: "center", behavior: "smooth" });
+    const marcar = new Set(res.fila >= 0 ? Object.keys(hojaModelo(res.hoja).celdas).filter(k => XLSX.utils.decode_cell(k).r === res.fila) : []);
+    dibujarHoja(res.hoja, { marcarCambios: marcar });
+    const td = $("#costos-hoja td.c-cambio"); if (td) td.scrollIntoView({ block: "center", behavior: "smooth" });
+    const errores = contarErrores();
+    avisar(res.aviso + (errores ? ` Ojo: hay ${errores} fórmula${errores > 1 ? "s" : ""} con error.` : ""));
     programarGuardado();
   });
+  function contarErrores() {
+    let n = 0;
+    for (const h of modelo.hojas) for (const [a, cel] of Object.entries(h.celdas)) {
+      if (!cel.f || (AJUSTES[h.nombre]?.hastaCol !== undefined && XLSX.utils.decode_cell(a).c > AJUSTES[h.nombre].hastaCol)) continue;
+      const { r, c } = XLSX.utils.decode_cell(a); const v = valor(h.nombre, r, c);
+      if (v && typeof v === "object" && v.type) n++;
+    }
+    return n;
+  }
 
   /* ---------- Mostrar el libro ---------- */
   function mostrarLibro() {
     $("#costos-vacio").hidden = !!modelo;
     $("#costos-libro").hidden = !modelo;
     $("#costos-exportar").hidden = !modelo;
+    /* Con datos cargados, reemplazar con un Excel pasa a ser una opción discreta */
+    const imp = $("#costos-importar");
+    imp.className = modelo ? "btn-texto" : "btn btn--azul";
+    imp.textContent = modelo ? "Reemplazar con un Excel" : "Cargar Excel";
     if (!modelo) return;
     $("#costos-hojas").innerHTML = modelo.hojas.map(h => `<button type="button" data-hoja="${esc(h.nombre)}">${esc(h.nombre)}</button>`).join("");
     let guardada = null;
