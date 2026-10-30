@@ -91,12 +91,25 @@
           falla(error);
         },
       },
+
+      /* Costos: el libro entero (pestañas con fórmulas) en una sola fila */
+      costos: {
+        async leer() {
+          const { data, error } = await sb.from("costos_libro").select("datos, actualizado_el").eq("id", "principal").maybeSingle();
+          if (error) throw Object.assign(new Error(error.message), { faltaTabla: /costos_libro/.test(error.message) || error.code === "PGRST205" });
+          return data ? { ...data.datos, actualizado_el: data.actualizado_el } : null;
+        },
+        async guardar(datos) {
+          const { error } = await sb.from("costos_libro").upsert({ id: "principal", datos, actualizado_el: new Date().toISOString() });
+          falla(error);
+        },
+      },
     };
   }
 
   /* ---------- Modo prueba (este navegador) ---------- */
   function crearLocal() {
-    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados", prepizzas: "penitentia.stock.prepizzas" };
+    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados", prepizzas: "penitentia.stock.prepizzas", costos: "penitentia.stock.costos" };
     const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
     const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
     const hash = async (texto) => {
@@ -157,6 +170,14 @@
           return nuevo;
         },
         async eliminar(id) { guardar(K.prepizzas, leer(K.prepizzas, []).filter(m => m.id !== id)); },
+      },
+
+      costos: {
+        async leer() { return leer(K.costos, null); },
+        async guardar(datos) {
+          try { localStorage.setItem(K.costos, JSON.stringify({ ...datos, actualizado_el: new Date().toISOString() })); }
+          catch { throw new Error("No hay lugar en este navegador para guardar los costos."); }
+        },
       },
     };
   }

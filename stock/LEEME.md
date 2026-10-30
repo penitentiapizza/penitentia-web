@@ -50,3 +50,13 @@ git push
 python -m http.server 8642
 ```
 y abrí http://localhost:8642/stock/
+
+## Costos (pestaña Costos)
+
+Es el Excel «2 - Costos/Costos Penitentia.xlsx» dentro de la página, con las mismas pestañas y las mismas fórmulas vinculadas: si cambiás un precio en **Precios Insumos**, se recalculan Insumos, Recetas, Costos Fijos y Variables, Precios y Rentabilidad y el Tablero.
+
+- **Primera vez:** tocá **Cargar Excel** y elegí `Costos Penitentia.xlsx`. Se guarda en Supabase (tabla `costos_libro`, sólo con usuario). En el código de la página no hay ningún precio.
+- **Editar:** se tocan las celdas amarillas (y los números de las celdas color crema, como «Cantidad de pizzas»). Se aceptan `1.500,50`, `30%` o una cuenta como `=5000/0,49`. Lo que cambia por el recálculo parpadea un instante. Se guarda solo.
+- **Descargar Excel:** baja un .xlsx con los valores y las fórmulas actuales (sin los colores).
+- **Volver a cargar el Excel** reemplaza lo que hay en la web por lo del archivo.
+- Las fórmulas las calcula HyperFormula (licencia GPLv3) y el Excel se lee con SheetJS; las dos se descargan sólo al abrir la pestaña. Se comprobó que las 868 fórmulas dan igual que en Excel.

@@ -112,3 +112,27 @@ create policy "Equipo Penitentia" on public.prepizzas_movimientos
   using (true) with check (true);
 
 revoke all on public.prepizzas_movimientos from anon;
+
+
+-- =========================================================
+-- COSTOS (agregado el 30/10/2026)
+-- El libro de costos (las pestañas del Excel «Costos Penitentia»,
+-- con sus fórmulas) guardado como un solo documento. Sólo con usuario:
+-- los costos y márgenes nunca quedan públicos.
+-- =========================================================
+
+create table if not exists public.costos_libro (
+  id              text primary key default 'principal',
+  datos           jsonb not null,
+  actualizado_el  timestamptz not null default now(),
+  actualizado_por uuid default auth.uid()
+);
+
+alter table public.costos_libro enable row level security;
+
+drop policy if exists "Equipo Penitentia" on public.costos_libro;
+create policy "Equipo Penitentia" on public.costos_libro
+  for all to authenticated
+  using (true) with check (true);
+
+revoke all on public.costos_libro from anon;

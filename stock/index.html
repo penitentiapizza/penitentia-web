@@ -57,6 +57,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/></svg>
             Prepizzas
           </button>
+          <button type="button" class="pestana" data-ir="costos">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h2M12 18h4M16 15v3"/></svg>
+            Costos
+          </button>
         </nav>
         <div class="barra__usuario">
           <span class="chip-prueba" id="chip-prueba" hidden>Modo prueba</span>
@@ -244,6 +248,36 @@
           </div>
         </div>
       </section>
+
+      <!-- COSTOS: las pestañas del Excel «Costos Penitentia», con sus fórmulas vinculadas -->
+      <section class="vista vista--costos" id="costos" aria-labelledby="t-costos" hidden>
+        <div class="contenedor">
+          <div class="cabeza cabeza--costos">
+            <h2 id="t-costos" class="titulo">Costos</h2>
+            <div class="costos-herr">
+              <span class="costos-estado" id="costos-estado" role="status" aria-live="polite"></span>
+              <button type="button" class="btn-texto" id="costos-exportar" hidden>Descargar Excel</button>
+              <button type="button" class="btn btn--azul" id="costos-importar">Cargar Excel</button>
+              <input type="file" id="costos-archivo" accept=".xlsx" hidden>
+            </div>
+          </div>
+
+          <p class="aviso aviso--error" id="costos-falta" hidden>
+            Falta crear la tabla de costos en Supabase (SQL Editor → pegar la parte «COSTOS» de supabase.sql → Run).
+          </p>
+
+          <div class="costos-vacio" id="costos-vacio" hidden>
+            <p><b>Todavía no cargaste tu Excel de costos.</b></p>
+            <p>Tocá <b>Cargar Excel</b> y elegí «Costos Penitentia.xlsx». Cada pestaña del Excel aparece acá, con las mismas fórmulas: cambiás un precio y se recalcula todo.</p>
+          </div>
+
+          <div class="costos" id="costos-libro" hidden>
+            <nav class="hojas" id="costos-hojas" aria-label="Pestañas del libro de costos"></nav>
+            <p class="costos-ayuda">Las celdas <span class="muestra-editable">amarillas</span> se editan: tocá una, escribí y apretá Enter. Todo lo que depende de ese valor se recalcula al instante.</p>
+            <div class="hoja-caja" id="costos-hoja" tabindex="-1"></div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -281,5 +315,6 @@
   <script src="js/etiqueta.js"></script>
   <script src="js/app.js"></script>
   <script src="js/prepizzas.js"></script>
+  <script src="js/costos.js"></script>
 </body>
 </html>

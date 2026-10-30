@@ -371,6 +371,7 @@
     $$(".vista").forEach(v => { v.hidden = v.id !== vista; });
     $$(".pestana").forEach(p => (p.dataset.ir === vista ? p.setAttribute("aria-current", "page") : p.removeAttribute("aria-current")));
     try { sessionStorage.setItem("penitentia.vista", vista); } catch { /* nada */ }
+    document.dispatchEvent(new CustomEvent("stock:vista", { detail: vista }));
     window.scrollTo({ top: 0 });
   }
   document.addEventListener("click", e => { const b = e.target.closest("[data-ir]"); if (b) ir(b.dataset.ir); });
