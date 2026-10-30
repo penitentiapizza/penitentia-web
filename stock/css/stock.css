@@ -457,6 +457,16 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .hoja td.c-cambio { animation: recalculo 1.6s var(--ease-out); }
 @keyframes recalculo { 0% { background: #D7E3F7; box-shadow: inset 0 0 0 2px var(--azul-55); } 100% {} }
 
+/* Agregar insumo / ingrediente */
+.costos-agregar { margin: 6px 0 4px; }
+.agregar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 12px; padding: 14px 16px; border-radius: var(--radio); background: var(--azul-06); }
+.agregar__tit { flex-basis: 100%; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: .05em; }
+.agregar .campo { flex: 1 1 150px; }
+.agregar .campo input, .agregar .campo select { width: 100%; min-width: 0; }
+.agregar .btn { min-height: 46px; }
+.agregar__nota { flex-basis: 100%; font-size: 13px; color: var(--azul-70); }
+@media (max-width: 640px) { .agregar .btn { flex-basis: 100%; } }
+
 /* Gráficos del Tablero */
 .fila-graficos > td { padding: 14px !important; height: auto !important; white-space: normal !important; background: var(--blanco); }
 .graficos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
