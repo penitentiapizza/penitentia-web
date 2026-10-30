@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>if (location.protocol === "http:" && /penitentia\.com\.ar$/.test(location.hostname)) location.replace("https://penitentia.com.ar" + location.pathname + location.search + location.hash)</script>
+  <title>Contacto · Penitentia Pizza</title>
+  <meta name="description" content="Pedí tus pizzas congeladas Penitentia: WhatsApp, Instagram, mail y catálogo online.">
+  <meta name="theme-color" content="#1D2E4A">
+  <link rel="canonical" href="https://penitentia.com.ar/contacto/">
+  <link rel="icon" href="../img/favicon.svg" type="image/svg+xml">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Contacto · Penitentia Pizza">
+  <meta property="og:description" content="WhatsApp, Instagram, mail y catálogo online.">
+  <meta property="og:url" content="https://penitentia.com.ar/contacto/">
+  <meta property="og:image" content="https://penitentia.com.ar/img/og.jpg">
+  <style>
+    /* Mismo sistema que la web: azul #1D2E4A, blanco, firma en SVG, Arial */
+    @font-face { font-family: "Arimo"; src: url("../fonts/arimo-latin.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+    :root {
+      --azul: #1D2E4A; --azul-medio: #2A3F62; --blanco: #fff;
+      --blanco-80: rgba(255,255,255,.84); --blanco-60: rgba(255,255,255,.66);
+      --ficha: rgba(255,255,255,.09); --ficha-hover: rgba(255,255,255,.16);
+      --ease: cubic-bezier(.22, 1, .36, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100svh; background: var(--azul); color: var(--blanco);
+      font-family: Arial, Arimo, "Helvetica Neue", Helvetica, sans-serif; -webkit-font-smoothing: antialiased;
+      display: flex; justify-content: center;
+      padding: max(36px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+      -webkit-tap-highlight-color: transparent;
+    }
+    ::selection { background: var(--blanco); color: var(--azul); }
+    :focus-visible { outline: 3px solid var(--blanco); outline-offset: 3px; border-radius: 18px; }
+    main { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; }
+
+    .marca { display: block; width: min(260px, 72vw); }
+    .marca img { width: 100%; height: auto; display: block; }
+    .bajada { margin-top: 18px; text-align: center; font-size: 17px; line-height: 1.45; color: var(--blanco-80); max-width: 32ch; }
+
+    .lista { list-style: none; width: 100%; margin-top: 30px; display: grid; gap: 12px; }
+    .enlace {
+      display: grid; grid-template-columns: 48px 1fr 20px; align-items: center; gap: 14px;
+      min-height: 72px; padding: 12px 18px 12px 12px; border-radius: 20px;
+      background: var(--ficha); color: var(--blanco); text-decoration: none;
+      transition: background-color 180ms ease, transform 100ms var(--ease);
+      touch-action: manipulation;
+    }
+    .enlace:active { transform: scale(.98); }
+    @media (hover: hover) { .enlace:hover { background: var(--ficha-hover); } }
+    .icono { width: 48px; height: 48px; border-radius: 14px; background: var(--blanco); color: var(--azul); display: grid; place-items: center; }
+    .icono svg { width: 26px; height: 26px; }
+    .texto strong { display: block; font-size: 18px; line-height: 1.2; }
+    .texto span { display: block; margin-top: 2px; font-size: 15px; color: var(--blanco-80); overflow-wrap: anywhere; }
+    .flecha { width: 20px; height: 20px; opacity: .7; }
+
+    /* Destacado: pedir en la web */
+    .enlace--principal { background: var(--blanco); color: var(--azul); }
+    .enlace--principal .icono { background: var(--azul); color: var(--blanco); }
+    .enlace--principal .texto span { color: rgba(29,46,74,.74); }
+    @media (hover: hover) { .enlace--principal:hover { background: #E7EAF0; } }
+
+    /* Ubicación todavía sin cargar */
+    .enlace--pronto { opacity: .55; pointer-events: none; }
+
+    .pie { margin-top: 30px; font-size: 14px; color: var(--blanco-60); text-align: center; }
+    .pie a { color: var(--blanco-80); }
+
+    /* Entrada suave, fila por fila */
+    @media (prefers-reduced-motion: no-preference) {
+      .marca, .bajada, .lista li { animation: subir 520ms var(--ease) both; }
+      .bajada { animation-delay: 60ms; }
+      .lista li:nth-child(1) { animation-delay: 120ms; } .lista li:nth-child(2) { animation-delay: 170ms; }
+      .lista li:nth-child(3) { animation-delay: 220ms; } .lista li:nth-child(4) { animation-delay: 270ms; }
+      .lista li:nth-child(5) { animation-delay: 320ms; }
+      @keyframes subir { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <a class="marca" href="../" aria-label="Penitentia Pizza, ir a la página principal">
+    <img src="../img/logo-blanco.svg" alt="Penitentia Pizza" width="700" height="289">
+  </a>
+  <p class="bajada">Pizzas congeladas a la piedra. Pedidos, consultas y venta por mayor y por menor.</p>
+
+  <ul class="lista">
+    <li>
+      <a class="enlace enlace--principal" href="../#catalogo">
+        <span class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9z"/><path d="M9 7V6a3 3 0 0 1 6 0v1"/></svg></span>
+        <span class="texto"><strong>Hacé tu pedido</strong><span>Catálogo en penitentia.com.ar</span></span>
+        <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+    <li>
+      <a class="enlace" data-wa href="https://wa.me/5492617252048" target="_blank" rel="noopener">
+        <span class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5l1.3-4.2A8.5 8.5 0 1 1 8 19.3z"/><path d="M9.2 8.3c.2-.4.5-.5.8-.5h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .5-.1.6l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.2.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.6.4-1.5.6-2.4.3-2.3-.8-4.1-2.6-4.9-4.9-.3-.9-.1-1.8.1-2.6z" fill="currentColor" stroke="none"/></svg></span>
+        <span class="texto"><strong>WhatsApp</strong><span data-wa-visible>261 725 2048</span></span>
+        <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+    <li>
+      <a class="enlace" data-ig href="https://www.instagram.com/penitentia.ar/" target="_blank" rel="noopener">
+        <span class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r=".8" fill="currentColor"/></svg></span>
+        <span class="texto"><strong>Instagram</strong><span data-ig-visible>@penitentia.ar</span></span>
+        <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+    <li>
+      <a class="enlace" data-mail href="mailto:penitentia.oficial@gmail.com">
+        <span class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></span>
+        <span class="texto"><strong>Mail</strong><span data-mail-visible>penitentia.oficial@gmail.com</span></span>
+        <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+    <li>
+      <a class="enlace enlace--pronto" data-ubicacion aria-disabled="true">
+        <span class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span>
+        <span class="texto"><strong>Ubicación</strong><span data-ubicacion-visible>Próximamente</span></span>
+        <svg class="flecha" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </a>
+    </li>
+  </ul>
+
+  <p class="pie">Reparto: el día viernes · <a href="../">penitentia.com.ar</a></p>
+</main>
+
+<!-- Los datos salen del mismo archivo que usa la web: js/productos.js -->
+<script src="../js/productos.js"></script>
+<script>
+  (function () {
+    var C = window.PENITENTIA_CONTACTO || {};
+    var dia = window.PENITENTIA_DIA_REPARTO;
+    function q(s) { return document.querySelector(s); }
+    if (C.whatsapp) {
+      q("[data-wa]").href = "https://wa.me/" + C.whatsapp + "?text=" + encodeURIComponent("¡Hola Penitentia! Quería hacerles una consulta.");
+      if (C.whatsappVisible) q("[data-wa-visible]").textContent = C.whatsappVisible;
+    }
+    if (C.instagram) {
+      q("[data-ig]").href = "https://www.instagram.com/" + C.instagram + "/";
+      q("[data-ig-visible]").textContent = "@" + C.instagram;
+    }
+    if (C.email) {
+      q("[data-mail]").href = "mailto:" + C.email + "?subject=" + encodeURIComponent("Consulta desde la web");
+      q("[data-mail-visible]").textContent = C.email;
+    }
+    // Ubicación: se activa sola cuando cargás el link en js/productos.js
+    if (C.ubicacion) {
+      var u = q("[data-ubicacion]");
+      u.href = C.ubicacion; u.target = "_blank"; u.rel = "noopener";
+      u.classList.remove("enlace--pronto"); u.removeAttribute("aria-disabled");
+      q("[data-ubicacion-visible]").textContent = C.ubicacionVisible || "Ver en el mapa";
+    }
+    if (dia) q(".pie").firstChild.textContent = "Reparto: el día " + dia + " · ";
+  })();
+</script>
+</body>
+</html>

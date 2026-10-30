@@ -83,5 +83,9 @@ window.PENITENTIA_CONTACTO = {
   whatsapp: "5492617252048",          // código país 54 + 9 + 261 7252048
   whatsappVisible: "261 725 2048",
   email: "penitentia.oficial@gmail.com",
-  instagram: "penitentia.ar"
+  instagram: "penitentia.ar",
+  // Ubicación: cuando la tengas, pegá el link de Google Maps y la dirección.
+  // Mientras esté vacío, en penitentia.com.ar/contacto aparece como "Próximamente".
+  ubicacion: "",                      // ej: "https://maps.app.goo.gl/xxxxx"
+  ubicacionVisible: ""                // ej: "San Martín 1234, Mendoza"
 };

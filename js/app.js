@@ -407,6 +407,25 @@
   pintarCatalogo();
   pintarTodo();
   prepararVida();
+  irAlEnlace();
+
+  /* Links directos (ej. penitentia.com.ar/#contacto o /hablemos): el catálogo se arma con JS
+     y cambia el alto de la página, así que el salto del navegador queda corto. Se repite al cargar. */
+  function irAlEnlace() {
+    var id = location.hash.slice(1);
+    if (!id || id === "inicio") return;
+    function saltar() {
+      var destino = document.getElementById(id);
+      if (!destino) return;
+      // Al llegar desde un link se salta directo (sin el desplazamiento suave de la página)
+      var raiz = document.documentElement, antes = raiz.style.scrollBehavior;
+      raiz.style.scrollBehavior = "auto";
+      destino.scrollIntoView({ block: "start" });
+      raiz.style.scrollBehavior = antes;
+    }
+    requestAnimationFrame(saltar);
+    window.addEventListener("load", function () { setTimeout(saltar, 60); }, { once: true });
+  }
   // Se mide después de la carga, cuando el navegador ya saltó a un #enlace
   if (document.readyState === "complete") requestAnimationFrame(prepararEntradas);
   else window.addEventListener("load", function () { requestAnimationFrame(prepararEntradas); });
