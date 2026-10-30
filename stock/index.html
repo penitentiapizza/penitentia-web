@@ -53,6 +53,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M4 10h16M8 6.5h2M8 13.5h2"/></svg>
             Stock <span class="pestana__num" id="num-stock">0</span>
           </button>
+          <button type="button" class="pestana" data-ir="prepizzas">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/></svg>
+            Prepizzas
+          </button>
         </nav>
         <div class="barra__usuario">
           <span class="chip-prueba" id="chip-prueba" hidden>Modo prueba</span>
@@ -156,6 +160,90 @@
           <button type="button" class="btn-texto btn-texto--claro" data-accion="limpiar">Cancelar</button>
         </div>
       </section>
+
+      <!-- PREPIZZAS: movimientos cargados a mano para la contabilidad -->
+      <section class="vista" id="prepizzas" aria-labelledby="t-prepizzas" hidden>
+        <div class="contenedor">
+          <div class="cabeza">
+            <h2 id="t-prepizzas" class="titulo">Prepizzas</h2>
+            <label class="campo campo--linea">
+              <span>Período</span>
+              <select id="pp-periodo"></select>
+            </label>
+          </div>
+
+          <p class="aviso aviso--error" id="pp-falta" hidden>
+            Falta crear la tabla de prepizzas en Supabase (SQL Editor → pegar la parte «PREPIZZAS» de supabase.sql → Run).
+          </p>
+
+          <div class="resumen resumen--pp" id="pp-resumen" aria-live="polite"></div>
+
+          <div class="pp">
+            <form class="pp-form" id="pp-form" novalidate>
+              <h3>Cargar movimiento</h3>
+              <div class="segmentos" role="radiogroup" aria-label="Tipo de movimiento">
+                <button type="button" role="radio" data-tipo="produccion" aria-checked="true">Producción</button>
+                <button type="button" role="radio" data-tipo="venta" aria-checked="false">Venta</button>
+                <button type="button" role="radio" data-tipo="perdida" aria-checked="false">Pérdida</button>
+              </div>
+              <div class="pp-form__fila">
+                <label class="campo campo--linea">
+                  <span>Fecha</span>
+                  <input type="date" id="pp-fecha" required>
+                </label>
+                <div class="campo campo--linea">
+                  <span id="pp-cant-rotulo">Cantidad</span>
+                  <div class="cantidad" role="group" aria-labelledby="pp-cant-rotulo">
+                    <button type="button" data-pp-paso="-1" aria-label="Una menos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+                    <input type="number" inputmode="numeric" min="1" max="10000" value="1" id="pp-cantidad" aria-label="Cantidad">
+                    <button type="button" data-pp-paso="1" aria-label="Una más"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
+                  </div>
+                </div>
+              </div>
+              <div class="pp-form__fila" data-solo-venta hidden>
+                <label class="campo campo--linea">
+                  <span>Precio unitario $</span>
+                  <input type="number" inputmode="decimal" min="0" step="0.01" id="pp-precio" placeholder="0">
+                </label>
+                <label class="campo campo--linea">
+                  <span>Canal</span>
+                  <select id="pp-canal">
+                    <option value="">Sin indicar</option>
+                    <option>WhatsApp</option>
+                    <option>Venta directa</option>
+                    <option>Mayorista</option>
+                    <option>PedidosYa</option>
+                    <option>Uber Eats</option>
+                    <option>Otro</option>
+                  </select>
+                </label>
+              </div>
+              <label class="campo campo--linea">
+                <span>Nota (opcional)</span>
+                <input id="pp-nota" maxlength="200" placeholder="Ej. cliente, tamaño, motivo">
+              </label>
+              <p class="pp-form__total" id="pp-total" data-solo-venta hidden></p>
+              <button class="btn btn--azul btn--ancho" type="submit" id="pp-guardar">Guardar</button>
+            </form>
+
+            <div class="pp-lista">
+              <div class="pp-lista__cab">
+                <h3>Movimientos</h3>
+                <button type="button" class="btn-texto" id="pp-csv">Descargar para Excel</button>
+              </div>
+              <div class="tabla-caja">
+                <table class="tabla tabla--pp">
+                  <thead>
+                    <tr><th>Fecha</th><th>Movimiento</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th><th>Detalle</th><th class="col-acc"><span class="sr">Acciones</span></th></tr>
+                  </thead>
+                  <tbody id="pp-filas"></tbody>
+                </table>
+                <div class="vacio" id="pp-vacio" hidden><p>No hay movimientos en este período.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -192,5 +280,6 @@
   <script src="js/datos.js"></script>
   <script src="js/etiqueta.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/prepizzas.js"></script>
 </body>
 </html>

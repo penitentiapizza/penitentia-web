@@ -82,3 +82,33 @@ drop trigger if exists pizzas_rechazar_codigo on public.pizzas;
 create trigger pizzas_rechazar_codigo
   before insert on public.pizzas
   for each row execute function public.rechazar_codigo_eliminado();
+
+
+-- =========================================================
+-- PREPIZZAS (agregado el 30/10/2026)
+-- Movimientos cargados a mano para llevar la cuenta de prepizzas:
+-- producción, venta (con precio) y pérdida. Sólo con usuario.
+-- =========================================================
+
+create table if not exists public.prepizzas_movimientos (
+  id              uuid primary key default gen_random_uuid(),
+  fecha           date not null default current_date,
+  tipo            text not null check (tipo in ('produccion', 'venta', 'perdida')),
+  cantidad        int  not null check (cantidad > 0),
+  precio_unitario numeric(12, 2) check (precio_unitario >= 0),   -- sólo en ventas, en pesos
+  canal           text,
+  nota            text,
+  creado_el       timestamptz not null default now(),
+  creado_por      uuid default auth.uid()
+);
+
+create index if not exists prepizzas_fecha_idx on public.prepizzas_movimientos (fecha);
+
+alter table public.prepizzas_movimientos enable row level security;
+
+drop policy if exists "Equipo Penitentia" on public.prepizzas_movimientos;
+create policy "Equipo Penitentia" on public.prepizzas_movimientos
+  for all to authenticated
+  using (true) with check (true);
+
+revoke all on public.prepizzas_movimientos from anon;

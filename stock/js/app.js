@@ -339,9 +339,9 @@
     else cambiarEstado(ids, a);
   });
 
-  $$(".segmentos button").forEach(b => b.addEventListener("click", () => {
+  $$("#stock .segmentos button").forEach(b => b.addEventListener("click", () => {
     filtro.estado = b.dataset.estado;
-    $$(".segmentos button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $$("#stock .segmentos button").forEach(x => x.setAttribute("aria-pressed", x === b));
     elegidas.clear();
     pintarTabla();
   }));
@@ -359,7 +359,7 @@
     if (e.target.closest("[data-limpiar-filtros]")) {
       Object.assign(filtro, { estado: "", variedad: "", texto: "" });
       $("#buscar").value = ""; $("#filtro-variedad").value = "";
-      $$(".segmentos button").forEach(x => x.setAttribute("aria-pressed", x.dataset.estado === ""));
+      $$("#stock .segmentos button").forEach(x => x.setAttribute("aria-pressed", x.dataset.estado === ""));
       pintarResumen(); pintarTabla();
     }
   });
@@ -377,6 +377,9 @@
 
   function refrescar() { pintarStockVariedades(); pintarResumen(); pintarTabla(); }
 
+  /* Lo que usa prepizzas.js */
+  window.STOCK = { avisar, hoyISO, fechaAR };
+
   async function abrirSistema(sesion) {
     $("#ingreso").hidden = true;
     $("#sistema").hidden = false;
@@ -384,6 +387,7 @@
     $("#chip-prueba").hidden = D.modo !== "prueba";
     try { [pizzas, eliminados] = await Promise.all([D.listar(), D.codigosEliminados()]); } catch (e) { avisar("No se pudieron leer las pizzas: " + e.message); }
     refrescar();
+    document.dispatchEvent(new Event("stock:sesion"));
     let vista = "producir";
     try { vista = sessionStorage.getItem("penitentia.vista") || vista; } catch { /* nada */ }
     ir(vista);
@@ -415,7 +419,7 @@
     } finally { btn.disabled = false; btn.classList.remove("cargando"); }
   });
 
-  $("#btn-salir").addEventListener("click", async () => { await D.salir(); pizzas = []; eliminados = []; elegidas.clear(); abrirIngreso(); });
+  $("#btn-salir").addEventListener("click", async () => { await D.salir(); pizzas = []; eliminados = []; elegidas.clear(); document.dispatchEvent(new Event("stock:salir")); abrirIngreso(); });
 
   /* Arranque */
   $("#fecha-lote").value = hoyISO();

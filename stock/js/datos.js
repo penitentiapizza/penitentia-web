@@ -68,12 +68,35 @@
           if (data.length < 1000) return codigos;
         }
       },
+
+      /* Prepizzas: movimientos cargados a mano (producción, venta, pérdida) */
+      prepizzas: {
+        async listar() {
+          const filas = [];
+          for (let desde = 0; ; desde += 1000) {
+            const { data, error } = await sb.from("prepizzas_movimientos").select("*")
+              .order("fecha", { ascending: false }).order("creado_el", { ascending: false }).range(desde, desde + 999);
+            if (error) throw Object.assign(new Error(error.message), { faltaTabla: /prepizzas_movimientos/.test(error.message) || error.code === "PGRST205" });
+            filas.push(...data);
+            if (data.length < 1000) return filas;
+          }
+        },
+        async crear(m) {
+          const { data, error } = await sb.from("prepizzas_movimientos").insert(m).select().single();
+          falla(error);
+          return data;
+        },
+        async eliminar(id) {
+          const { error } = await sb.from("prepizzas_movimientos").delete().eq("id", id);
+          falla(error);
+        },
+      },
     };
   }
 
   /* ---------- Modo prueba (este navegador) ---------- */
   function crearLocal() {
-    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados" };
+    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados", prepizzas: "penitentia.stock.prepizzas" };
     const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
     const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
     const hash = async (texto) => {
@@ -123,6 +146,18 @@
         return borradas.map(p => p.id);
       },
       async codigosEliminados() { return leer(K.eliminados, []); },
+
+      prepizzas: {
+        async listar() {
+          return leer(K.prepizzas, []).sort((x, y) => y.fecha.localeCompare(x.fecha) || y.creado_el.localeCompare(x.creado_el));
+        },
+        async crear(m) {
+          const nuevo = { id: crypto.randomUUID(), creado_el: new Date().toISOString(), precio_unitario: null, canal: null, nota: null, ...m };
+          guardar(K.prepizzas, [nuevo, ...leer(K.prepizzas, [])]);
+          return nuevo;
+        },
+        async eliminar(id) { guardar(K.prepizzas, leer(K.prepizzas, []).filter(m => m.id !== id)); },
+      },
     };
   }
 
