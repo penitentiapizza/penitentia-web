@@ -1,7 +1,21 @@
 /*
   CATÁLOGO DE PIZZAS CONGELADAS
   ------------------------------------------------------------
-  Para cambiar precios, nombres o agregar variedades, editá solo este archivo.
+  Desde el 02/11/2026 el catálogo se maneja en Acceso equipo → Catálogo
+  (penitentia.com.ar/stock): los precios salen solos de Costos y las
+  variedades, textos y fotos se cargan ahí. La web lo lee de Supabase.
+
+  Esta lista queda de RESPALDO: se muestra sólo si la base no responde
+  (por ejemplo, si Supabase pausó el proyecto). Conviene que no quede
+  muy atrasada, pero ya no hace falta editarla para cambiar precios.
+*/
+window.PENITENTIA_CATALOGO_NUBE = {
+  url: "https://mamluwwpypacqczwyzwc.supabase.co",
+  clave: "sb_publishable_xp87_PXr1iLeiHvJRPFZAg_mX8s0p-4"   // clave pública: sólo deja leer lo publicado
+};
+
+/*
+  Campos de cada pizza (en el respaldo y en la base):
   - id:          identificador único, sin espacios ni tildes.
   - nombre:      como aparece en la tarjeta y en el pedido de WhatsApp.
   - descripcion: propuesta de sabor (no reemplaza la lista de ingredientes).

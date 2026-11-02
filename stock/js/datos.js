@@ -104,12 +104,44 @@
           falla(error);
         },
       },
+
+      /* Catálogo web: lo que ve el público en penitentia.com.ar (sólo las filas con «mostrar») */
+      catalogo: {
+        async listar() {
+          const { data, error } = await sb.from("catalogo").select("*").order("orden").order("nombre");
+          if (error) throw Object.assign(new Error(error.message), { faltaTabla: /catalogo/.test(error.message) || error.code === "PGRST205" });
+          return data;
+        },
+        async crear(fila) {
+          const { data, error } = await sb.from("catalogo").insert(fila).select().single();
+          falla(error);
+          return data;
+        },
+        async actualizar(id, campos) {
+          const { data, error } = await sb.from("catalogo").update({ ...campos, actualizado_el: new Date().toISOString() }).eq("id", id).select().single();
+          falla(error);
+          return data;
+        },
+        async eliminar(id) {
+          const { error } = await sb.from("catalogo").delete().eq("id", id);
+          falla(error);
+        },
+        /* Sube las fotos (800 y 480 px) y devuelve la dirección pública de la grande */
+        async subirFoto(nombre, grande, chica) {
+          const bucket = sb.storage.from("catalogo");
+          for (const [archivo, blob] of [[nombre, grande], chica && [nombre.replace(/-800\.(\w+)$/, "-480.$1"), chica]].filter(Boolean)) {
+            const { error } = await bucket.upload(archivo, blob, { contentType: blob.type, cacheControl: "31536000", upsert: false });
+            falla(error);
+          }
+          return bucket.getPublicUrl(nombre).data.publicUrl;
+        },
+      },
     };
   }
 
   /* ---------- Modo prueba (este navegador) ---------- */
   function crearLocal() {
-    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados", prepizzas: "penitentia.stock.prepizzas", costos: "penitentia.stock.costos" };
+    const K = { pizzas: "penitentia.stock.pizzas", usuario: "penitentia.stock.usuario", sesion: "penitentia.stock.sesion", eliminados: "penitentia.stock.eliminados", prepizzas: "penitentia.stock.prepizzas", costos: "penitentia.stock.costos", catalogo: "penitentia.stock.catalogo" };
     const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
     const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
     const hash = async (texto) => {
@@ -177,6 +209,27 @@
         async guardar(datos) {
           try { localStorage.setItem(K.costos, JSON.stringify({ ...datos, actualizado_el: new Date().toISOString() })); }
           catch { throw new Error("No hay lugar en este navegador para guardar los costos."); }
+        },
+      },
+
+      catalogo: {
+        async listar() { return leer(K.catalogo, []).sort((x, y) => x.orden - y.orden || x.nombre.localeCompare(y.nombre)); },
+        async crear(fila) {
+          const todas = leer(K.catalogo, []);
+          if (todas.some(f => f.id === fila.id || (fila.receta && f.receta === fila.receta))) throw new Error("Ya existe en el catálogo");
+          const nueva = { receta: null, descripcion: "", precio: null, foto: "", mostrar: false, disponible: true, orden: 0, ...fila, actualizado_el: new Date().toISOString() };
+          guardar(K.catalogo, [...todas, nueva]);
+          return nueva;
+        },
+        async actualizar(id, campos) {
+          const todas = leer(K.catalogo, []).map(f => (f.id === id ? { ...f, ...campos, actualizado_el: new Date().toISOString() } : f));
+          guardar(K.catalogo, todas);
+          return todas.find(f => f.id === id);
+        },
+        async eliminar(id) { guardar(K.catalogo, leer(K.catalogo, []).filter(f => f.id !== id)); },
+        /* En modo prueba la foto queda en este navegador, como imagen incrustada */
+        async subirFoto(nombre, grande) {
+          return new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => mal(new Error("No se pudo leer la foto.")); r.readAsDataURL(grande); });
         },
       },
     };

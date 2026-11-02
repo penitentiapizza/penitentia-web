@@ -66,3 +66,16 @@ Es el Excel «2 - Costos/Costos Penitentia.xlsx» dentro de la página, con las 
 - **Descargar Excel:** baja un .xlsx con los valores y las fórmulas actuales (sin los colores).
 - **Reemplazar con un Excel** (discreto, al lado de Descargar) cambia todo lo de la web por lo del archivo; ya no hace falta usarlo.
 - Las fórmulas las calcula HyperFormula (licencia GPLv3) y el Excel se lee con SheetJS; las dos se descargan sólo al abrir la pestaña. Se comprobó que las 868 fórmulas dan igual que en Excel.
+
+## Catálogo web (pestaña Catálogo)
+
+Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla `catalogo`); sin usuario sólo se pueden leer las pizzas tildadas y sólo nombre, descripción, precio, foto, stock y orden. Costos, márgenes y recetas no salen nunca.
+
+- **Precios:** los pone Costos solo. Cada vez que se guarda algo en Costos, el precio de venta de cada receta (Precios y Rentabilidad, cuadro 2) pasa al catálogo redondeado a $100 (8.750 → 8.800). Abajo aparece un aviso con lo que cambió. **Traer precios de Costos** hace lo mismo a mano.
+- **Receta nueva en Costos:** aparece en Catálogo **oculta**. Escribile la descripción, subí la foto y tildá **Mostrar en la web**. Sin descripción no deja publicarla.
+- **Renombrar una receta** en Costos no la desvincula. **Quitarla** la saca de la web y queda «Sin receta en Costos».
+- **Sin receta en Costos:** el precio queda fijo. Se puede **vincular** con una receta nueva (la fila nueva se borra y esta toma su receta y su precio) o **quitar del catálogo**.
+- **Nombre y descripción** se guardan al salir del campo. **Hay stock** apagado muestra «Sin stock». Las flechas cambian el orden en la web.
+- **Fotos:** se recortan a 4:3 y se achican en el teléfono (800 y 480 px, WebP) antes de subir. Quedan en Supabase Storage, carpeta `catalogo` (pública: la web las muestra).
+- **Respaldo:** si Supabase no responde (por ejemplo, si pausó el proyecto), la web muestra la última lista que vio ese navegador o, si nunca la vio, la de `js/productos.js`.
+- **Primera vez:** pegá la parte «CATÁLOGO WEB» de `supabase.sql` en Supabase → SQL Editor → Run. Crea la tabla con las 7 variedades que había en la web y la carpeta de fotos.

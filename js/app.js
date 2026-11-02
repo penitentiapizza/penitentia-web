@@ -1,7 +1,12 @@
 (function () {
   "use strict";
 
-  var PRODUCTOS = window.PENITENTIA_PRODUCTOS || [];
+  /* El catálogo lo maneja el equipo desde /stock (se guarda en Supabase). Mientras llega se muestra
+     la última versión que vio este navegador o, la primera vez, la de productos.js, que también
+     queda de respaldo si la base no responde. */
+  var NUBE = window.PENITENTIA_CATALOGO_NUBE || {};
+  var CLAVE_CATALOGO = "penitentia-catalogo-v1";
+  var PRODUCTOS = catalogoGuardado() || window.PENITENTIA_PRODUCTOS || [];
   var CONTACTO = window.PENITENTIA_CONTACTO || {};
   var CLAVE = "penitentia-pedido-v1";
   var CLAVE_DATOS = "penitentia-datos-v1";
@@ -13,6 +18,7 @@
 
   var formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
   var pesos = function (n) { return formatoPesos.format(n).replace(/ /g, " "); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
   var porId = function (id) { return PRODUCTOS.filter(function (p) { return p.id === id; })[0]; };
   // Se puede sumar al carrito si hay stock y tiene precio; sin precio se consulta por WhatsApp
   var vendible = function (p) { return p.disponible !== false && typeof p.precio === "number" && p.precio > 0; };
@@ -50,8 +56,46 @@
   /* Fotos: si hay versión -480 de una -800.webp, los celulares bajan la chica */
   function chica(foto) { if (!foto) return "img/favicon.svg"; return /-800\.webp$/.test(foto) ? foto.replace(/-800\.webp$/, "-480.webp") : foto; }
   function fuente(foto) {
-    if (!/-800\.webp$/.test(foto)) return 'src="' + foto + '"';
-    return 'src="' + foto + '" srcset="' + chica(foto) + ' 480w, ' + foto + ' 800w" sizes="(max-width: 600px) 100vw, (max-width: 1080px) 40vw, 22vw"';
+    if (!/-800\.webp$/.test(foto)) return 'src="' + esc(foto) + '"';
+    return 'src="' + esc(foto) + '" srcset="' + esc(chica(foto)) + ' 480w, ' + esc(foto) + ' 800w" sizes="(max-width: 600px) 100vw, (max-width: 1080px) 40vw, 22vw"';
+  }
+
+  /* ---------- Catálogo desde /stock (Supabase: sólo lee lo publicado) ---------- */
+  function catalogoGuardado() {
+    try {
+      var c = JSON.parse(localStorage.getItem(CLAVE_CATALOGO) || "null");
+      return Array.isArray(c) && c.length ? c : null;
+    } catch (e) { return null; }
+  }
+  function traerCatalogo() {
+    if (!NUBE.url || !NUBE.clave || !window.fetch) return;
+    var control = "AbortController" in window ? new AbortController() : null;
+    var corte = setTimeout(function () { if (control) control.abort(); }, 8000);
+    fetch(NUBE.url + "/rest/v1/catalogo?select=id,nombre,descripcion,precio,foto,disponible&order=orden.asc,nombre.asc", {
+      headers: { apikey: NUBE.clave, Accept: "application/json" },
+      cache: "no-store", signal: control ? control.signal : undefined
+    })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (lista) {
+        clearTimeout(corte);
+        if (!Array.isArray(lista) || !lista.length) return; // vacío: queda lo que ya se ve
+        var nuevo = lista.map(function (p) {
+          return {
+            id: String(p.id), nombre: String(p.nombre || ""), descripcion: String(p.descripcion || ""),
+            precio: typeof p.precio === "number" ? p.precio : null, foto: p.foto || "", disponible: p.disponible !== false
+          };
+        });
+        if (JSON.stringify(nuevo) === JSON.stringify(PRODUCTOS)) return;
+        PRODUCTOS = nuevo;
+        try { localStorage.setItem(CLAVE_CATALOGO, JSON.stringify(nuevo)); } catch (e) { /* sin almacenamiento */ }
+        // El pedido sigue con los precios nuevos; se cae lo que ya no se vende
+        var antes = pedido;
+        pedido = leer();
+        Object.keys(antes).forEach(function (id) { var p = porId(id); if (!(id in pedido) && p && vendible(p)) pedido[id] = antes[id]; });
+        pintarCatalogo();
+        pintarTodo();
+      })
+      .catch(function () { clearTimeout(corte); }); // sin conexión con la base: queda el respaldo
   }
 
   /* ---------- Catálogo ---------- */
@@ -65,7 +109,7 @@
       seleccion[p.id] = seleccion[p.id] || 1;
       // Sin foto: la etiqueta azul de Penitentia, como la del freezer
       var foto = p.foto
-        ? '<img ' + fuente(p.foto) + ' alt="Pizza ' + p.nombre + '" loading="lazy" decoding="async" width="800" height="470">'
+        ? '<img ' + fuente(p.foto) + ' alt="Pizza ' + esc(p.nombre) + '" loading="lazy" decoding="async" width="800" height="470">'
         : '<img class="pizza__marca" src="img/logo-blanco.svg" alt="" width="700" height="289" loading="lazy">';
       var pie;
       if (hay && !conPrecio) {
@@ -74,7 +118,7 @@
                 enlaceWa("¡Hola Penitentia! Quería consultar el precio de la pizza " + p.nombre + ".") + '">Consultar</a>';
       } else {
         pie = '<p class="pizza__precio' + (conPrecio ? "" : " pizza__precio--consultar") + '">' + (conPrecio ? pesos(p.precio) : "Consultá el precio") + '</p>' +
-              '<div class="cantidad" role="group" aria-label="Cantidad de ' + p.nombre + '">' +
+              '<div class="cantidad" role="group" aria-label="Cantidad de ' + esc(p.nombre) + '">' +
                 '<button type="button" data-menos aria-label="Una menos"' + (hay ? "" : " disabled") + '>−</button>' +
                 '<output data-sel>' + seleccion[p.id] + '</output>' +
                 '<button type="button" data-mas aria-label="Una más"' + (hay ? "" : " disabled") + '>+</button>' +
@@ -84,13 +128,13 @@
               '</button>';
       }
       return (
-        '<article class="pizza" data-id="' + p.id + '" data-entra>' +
+        '<article class="pizza" data-id="' + esc(p.id) + '" data-entra>' +
           '<div class="pizza__foto' + (p.foto ? "" : " pizza__foto--etiqueta") + '">' + foto +
             '<span class="pizza__sello">' + (hay ? "Congelada" : "Sin stock") + '</span>' +
           '</div>' +
           '<div class="pizza__cuerpo">' +
-            '<h3 class="pizza__nombre">' + p.nombre + '</h3>' +
-            '<p class="pizza__desc">' + p.descripcion + '</p>' +
+            '<h3 class="pizza__nombre">' + esc(p.nombre) + '</h3>' +
+            '<p class="pizza__desc">' + esc(p.descripcion) + '</p>' +
             '<div class="pizza__pie">' + pie + '</div>' +
           '</div>' +
         '</article>'
@@ -140,12 +184,12 @@
     lista.innerHTML = ids.map(function (id) {
       var p = porId(id), c = pedido[id];
       return (
-        '<li class="item" data-id="' + id + '">' +
-          '<img src="' + chica(p.foto) + '" alt="" width="64" height="64" decoding="async">' +
+        '<li class="item" data-id="' + esc(id) + '">' +
+          '<img src="' + esc(chica(p.foto)) + '" alt="" width="64" height="64" decoding="async">' +
           '<div>' +
-            '<p class="item__nombre">' + p.nombre + '</p>' +
+            '<p class="item__nombre">' + esc(p.nombre) + '</p>' +
             '<p class="item__unit">' + pesos(p.precio) + ' c/u</p>' +
-            '<div class="cantidad cantidad--chica" role="group" aria-label="Cantidad de ' + p.nombre + '" style="margin-top:8px">' +
+            '<div class="cantidad cantidad--chica" role="group" aria-label="Cantidad de ' + esc(p.nombre) + '" style="margin-top:8px">' +
               '<button type="button" data-menos aria-label="Una menos">−</button>' +
               '<output>' + c + '</output>' +
               '<button type="button" data-mas aria-label="Una más">+</button>' +
@@ -406,6 +450,7 @@
 
   pintarCatalogo();
   pintarTodo();
+  traerCatalogo();
   prepararVida();
   irAlEnlace();
 

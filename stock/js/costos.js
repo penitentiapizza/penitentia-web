@@ -347,8 +347,41 @@
     } catch (e) {
       estado("Sin guardar", "error");
       avisar("No se guardó: " + e.message, { texto: "Reintentar", fn: guardarYa });
+      return;
+    }
+    publicarPrecios();
+  }
+
+  /* ---------- Precios del catálogo web ----------
+     Cada receta del cuadro 2 de Precios y Rentabilidad pasa su precio de venta
+     al catálogo, redondeado a la centena (8.750 → 8.800), como la lista de la web.
+     Sólo viaja el precio de venta: costos y márgenes no salen de acá. */
+  const REDONDEO = 100;
+  const precioWeb = v => (typeof v === "number" && v > 0 ? Math.round(v / REDONDEO) * REDONDEO : null);
+  const renombres = [], quitadas = [];   // cambios de recetas que el catálogo tiene que seguir
+  async function publicarPrecios(manual = false) {
+    if (!modelo || !window.CATALOGO) return;
+    const { h, c2 } = filasRentabilidad();
+    const recetas = c2.map(r => ({ receta: String(texto(h, r, 0) ?? "").trim(), precio: precioWeb(valor(h.nombre, r, 2)) })).filter(x => x.receta);
+    const cambios = { renombres: renombres.splice(0), quitadas: quitadas.splice(0) };
+    try {
+      const res = await window.CATALOGO.sincronizar(recetas, cambios);
+      const txt = window.CATALOGO.resumen(res);
+      if (txt || manual) avisar(txt || "Los precios de la web ya estaban al día.");
+    } catch (e) {
+      renombres.unshift(...cambios.renombres); quitadas.unshift(...cambios.quitadas);   // se reintentan en el próximo guardado
+      if (manual) throw new Error(e.faltaTabla ? "Falta crear la tabla del catálogo en Supabase (ver supabase.sql)." : "No se pudieron pasar los precios a la web: " + e.message);
+      console.warn("Catálogo web sin actualizar:", e.message);
     }
   }
+  /* Lo usa el botón «Traer precios de Costos» del catálogo */
+  window.COSTOS = {
+    async publicar() {
+      await abrir();
+      if (!modelo) throw new Error("Primero cargá el Excel de costos en Costos.");
+      await publicarPrecios(true);
+    },
+  };
   window.addEventListener("beforeunload", e => { if ($("#costos-estado").dataset.tipo === "guardando") { e.preventDefault(); e.returnValue = ""; } });
 
   /* =========================================================
@@ -631,6 +664,7 @@
     poner(h, b.titulo, 0, titulo.replace(/(Receta:\s*).*/i, `$1${nuevo}`));
     const { h: P, propias } = filasRentabilidad(b.total);
     for (const r of propias) poner(P, r, 0, nuevo);
+    renombres.push([receta, nuevo]);
     return { hoja: h.nombre, fila: b.titulo, aviso: `«${receta}» ahora se llama «${nuevo}».` };
   }
   function quitarReceta({ receta }) {
@@ -643,6 +677,7 @@
     const { h: P, propias } = filasRentabilidad(b.total);
     for (const r of propias.sort((x, y) => y - x)) quitarFila(P, r);
     for (let r = b.total + 5; r >= b.titulo; r--) if (r < h.filas && (r <= b.total || !Object.keys(h.celdas).some(a => XLSX.utils.decode_cell(a).r === r))) quitarFila(h, r);
+    quitadas.push(receta);
     return { hoja: h.nombre, fila: -1, aviso: `Receta «${receta}» quitada.` };
   }
 
@@ -905,6 +940,7 @@
         if (modelo) armarMotor();
         mostrarLibro();
         estado(modelo ? "Guardado" : "", modelo ? "ok" : "");
+        publicarPrecios();   // por si Costos cambió desde otro equipo o el catálogo es nuevo
       } catch (e) {
         cargando = null;
         $("#costos-falta").hidden = !e.faltaTabla;

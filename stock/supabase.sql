@@ -136,3 +136,76 @@ create policy "Equipo Penitentia" on public.costos_libro
   using (true) with check (true);
 
 revoke all on public.costos_libro from anon;
+
+
+-- =========================================================
+-- CATÁLOGO WEB (agregado el 02/11/2026)
+-- Lo que muestra el catálogo público de penitentia.com.ar.
+-- Se maneja desde Acceso equipo → Catálogo:
+--   - el precio lo pone Costos solo (Precios y Rentabilidad, cuadro 2,
+--     redondeado a $100) cada vez que se guarda ahí;
+--   - una receta nueva en Costos aparece acá oculta, hasta que se tilda
+--     «Mostrar en la web».
+-- El público SÓLO puede leer las filas tildadas, y sólo las columnas
+-- que ya se ven en la web. Costos, márgenes y recetas siguen privados.
+-- =========================================================
+
+create table if not exists public.catalogo (
+  id             text primary key,                    -- muzzarella, agridulce...
+  receta         text unique,                         -- nombre de la receta en Costos (vacío = sin vincular)
+  nombre         text not null,                       -- como se ve en la web y en el pedido
+  descripcion    text not null default '',
+  precio         int check (precio > 0),              -- lo pone Costos; vacío = «Consultá el precio»
+  foto           text not null default '',            -- img/p-x-800.webp o la dirección de una foto subida
+  mostrar        boolean not null default false,      -- «Mostrar en la web»
+  disponible     boolean not null default true,       -- false = «Sin stock»
+  orden          int not null default 0,
+  actualizado_el timestamptz not null default now()
+);
+
+alter table public.catalogo enable row level security;
+
+drop policy if exists "Equipo Penitentia" on public.catalogo;
+create policy "Equipo Penitentia" on public.catalogo
+  for all to authenticated
+  using (true) with check (true);
+
+drop policy if exists "Publico ve lo publicado" on public.catalogo;
+create policy "Publico ve lo publicado" on public.catalogo
+  for select to anon
+  using (mostrar);
+
+-- Sin usuario: sólo leer, y sólo estas columnas
+revoke all on public.catalogo from anon;
+grant select (id, nombre, descripcion, precio, foto, disponible, orden) on public.catalogo to anon;
+
+-- Las 7 variedades que había en la web (js/productos.js) el 02/11/2026
+insert into public.catalogo (id, receta, nombre, descripcion, precio, foto, mostrar, disponible, orden) values
+  ('muzzarella',        'Muzzarella',                            'Muzzarella',        'Salsa de tomate, mozzarella, aceite de oliva y orégano.',                     8000,  'img/p-muzzarella-800.webp', true, true, 1),
+  ('fugazza-con-queso', 'Fugazza con queso',                     'Fugazza con queso', 'Salsa de tomate, mozzarella y cebolla.',                                      8800,  'img/p-fugazza-800.webp',    true, true, 2),
+  ('provolone',         'Provolone',                             'Provolone',         'Salsa de tomate, mozzarella y provolone.',                                    10500, '',                          true, true, 3),
+  ('jamon-y-morron',    'Jamón y morrón',                        'Jamón y morrón',    'Salsa de tomate, mozzarella, jamón cocido y morrón.',                         13000, 'img/p-jamon-800.webp',      true, true, 4),
+  ('agridulce',         'Agridulce de peras, miel y queso azul', 'Agridulce',         'Salsa de tomate, mozzarella, peras, miel levemente picante y queso azul.',    10900, 'img/p-agridulce-800.webp',  true, true, 5),
+  ('tropical',          'Tropical',                              'Tropical',          'Salsa de tomate, mozzarella, ananá y jamón cocido.',                          13300, 'img/p-tropical-800.webp',   true, true, 6),
+  ('americana',         'Americana',                             'Americana',         'Salsa de tomate, mozzarella, salchicha alemana y panceta.',                   14200, 'img/p-americana-800.webp',  true, true, 7)
+on conflict (id) do nothing;
+
+-- Fotos subidas desde el catálogo: se ven públicas (las usa la web), sólo el equipo sube o borra
+insert into storage.buckets (id, name, public) values ('catalogo', 'catalogo', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "Equipo ve fotos del catalogo" on storage.objects;
+create policy "Equipo ve fotos del catalogo" on storage.objects
+  for select to authenticated using (bucket_id = 'catalogo');
+
+drop policy if exists "Equipo sube fotos del catalogo" on storage.objects;
+create policy "Equipo sube fotos del catalogo" on storage.objects
+  for insert to authenticated with check (bucket_id = 'catalogo');
+
+drop policy if exists "Equipo cambia fotos del catalogo" on storage.objects;
+create policy "Equipo cambia fotos del catalogo" on storage.objects
+  for update to authenticated using (bucket_id = 'catalogo');
+
+drop policy if exists "Equipo borra fotos del catalogo" on storage.objects;
+create policy "Equipo borra fotos del catalogo" on storage.objects
+  for delete to authenticated using (bucket_id = 'catalogo');
