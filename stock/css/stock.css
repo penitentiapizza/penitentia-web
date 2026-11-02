@@ -174,14 +174,19 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); cur
 @media (max-width: 1080px) {
   .pestana { padding: 0 12px; }
   .pestana svg { display: none; }
+  .chip-prueba { display: none; }
+}
+@media (max-width: 900px) {
+  .pestana { padding: 0 9px; }
+  .barra__nombre { display: none; }
 }
 @media (max-width: 720px) {
   .barra__in { gap: 12px; }
   .barra__logo { width: 76px; }
   .barra__nombre { display: none; }
-  .pestana { padding: 0 10px; gap: 7px; }
+  .pestana { padding: 0 7px; gap: 7px; font-size: 15px; }
   .pestana svg { display: none; }
-  .chip-prueba { padding: 4px 8px; font-size: 10px; }
+  .chip-prueba { display: none; }
 }
 /* Celular: las secciones pasan a una barra fija abajo, con ícono y nombre */
 @media (max-width: 640px) {
@@ -441,7 +446,9 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .cat--oculta .cat__foto > img:not(:only-child) { opacity: .55; }
 
 .cat__cuerpo { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.cat__cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cat__cab { display: flex; align-items: center; gap: 10px 20px; flex-wrap: wrap; }
+.cat__cab .cat__sello { margin-left: auto; }
+.cat__nota { margin-top: -4px; font-size: 13px; color: var(--azul-70); }
 .cat__sello { padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; background: var(--azul); color: var(--blanco); }
 .cat--oculta .cat__sello { background: var(--azul-08); color: var(--azul-70); }
 .cat .campo input { width: 100%; min-width: 0; }
@@ -475,7 +482,6 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .interruptor input:checked + .interruptor__pista { background: var(--azul); }
 .interruptor input:checked + .interruptor__pista::after { transform: translateX(18px); }
 .interruptor input:focus-visible + .interruptor__pista { outline: 2px solid var(--azul); outline-offset: 2px; }
-.interruptor--chico { font-size: var(--t-chico); }
 
 @media (max-width: 560px) {
   .cat { grid-template-columns: 1fr; }

@@ -129,8 +129,16 @@
               <span class="interruptor__pista" aria-hidden="true"></span>
               Mostrar en la web
             </label>
-            <span class="cat__sello">${f.mostrar ? "En la web" : "Oculta"}</span>
+            <label class="interruptor">
+              <input type="checkbox" data-campo="disponible"${f.disponible ? " checked" : ""}>
+              <span class="interruptor__pista" aria-hidden="true"></span>
+              Hay stock
+            </label>
+            <span class="cat__sello">${!f.mostrar ? "Oculta" : f.disponible ? "En la web" : "En la web · Sin stock"}</span>
           </div>
+          <p class="cat__nota">${!f.mostrar
+            ? "No aparece en la web. Si sólo te quedaste sin pizzas, tildá «Mostrar en la web» y apagá «Hay stock»: se sigue viendo, con «Sin stock»."
+            : f.disponible ? "Se ve en la web y se puede pedir." : "Se ve en la web con «Sin stock» y no se puede agregar al pedido."}</p>
           <label class="campo campo--linea">
             <span>Nombre en la web</span>
             <input data-campo="nombre" value="${esc(f.nombre)}" maxlength="50" required>
@@ -144,11 +152,6 @@
               <b>${f.precio ? pesos(f.precio) : "Consultá el precio"}</b>
               <span>${f.receta ? `De Costos · ${esc(f.receta)}` : "Sin receta en Costos"}</span>
             </p>
-            <label class="interruptor interruptor--chico">
-              <input type="checkbox" data-campo="disponible"${f.disponible ? " checked" : ""}>
-              <span class="interruptor__pista" aria-hidden="true"></span>
-              Hay stock
-            </label>
             <div class="cat__orden" role="group" aria-label="Orden en la web">
               <button type="button" class="btn-icono" data-mover="-1" aria-label="Subir ${esc(f.nombre)}"${i === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
               <button type="button" class="btn-icono" data-mover="1" aria-label="Bajar ${esc(f.nombre)}"${i === filas.length - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>

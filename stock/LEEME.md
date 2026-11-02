@@ -75,7 +75,8 @@ Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla 
 - **Receta nueva en Costos:** aparece en Catálogo **oculta**. Escribile la descripción, subí la foto y tildá **Mostrar en la web**. Sin descripción no deja publicarla.
 - **Renombrar una receta** en Costos no la desvincula. **Quitarla** la saca de la web y queda «Sin receta en Costos».
 - **Sin receta en Costos:** el precio queda fijo. Se puede **vincular** con una receta nueva (la fila nueva se borra y esta toma su receta y su precio) o **quitar del catálogo**.
-- **Nombre y descripción** se guardan al salir del campo. **Hay stock** apagado muestra «Sin stock». Las flechas cambian el orden en la web.
+- **Mostrar en la web** y **Hay stock** van arriba de cada ficha. Sin stock: dejá «Mostrar en la web» tildado y apagá «Hay stock», así la pizza se sigue viendo con «Sin stock» y no se puede pedir. «Mostrar en la web» apagado la saca de la web (para recetas en preparación).
+- **Nombre y descripción** se guardan al salir del campo. Las flechas cambian el orden en la web.
 - **Fotos:** se recortan a 4:3 y se achican en el teléfono (800 y 480 px, WebP) antes de subir. Quedan en Supabase Storage, carpeta `catalogo` (pública: la web las muestra).
 - **Respaldo:** si Supabase no responde (por ejemplo, si pausó el proyecto), la web muestra la última lista que vio ese navegador o, si nunca la vio, la de `js/productos.js`.
 - **Primera vez:** pegá la parte «CATÁLOGO WEB» de `supabase.sql` en Supabase → SQL Editor → Run. Crea la tabla con las 7 variedades que había en la web y la carpeta de fotos.
