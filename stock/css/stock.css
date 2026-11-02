@@ -514,11 +514,20 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .muestra-editable { padding: 1px 6px; border-radius: 4px; background: #FFF2CC; color: var(--azul); font-weight: 700; box-shadow: inset 0 -2px 0 #E2C66B; }
 
 /* El cuadro crece con la página (una sola barra para bajar); sólo se desliza de costado si la pestaña es más ancha */
-.hoja-caja { overflow-x: auto; overflow-y: hidden; border-radius: var(--radio); box-shadow: inset 0 0 0 1.5px var(--azul-12); background: var(--blanco); -webkit-overflow-scrolling: touch; }
+.hoja-caja { overflow-x: auto; overflow-y: hidden; border-radius: var(--radio-ficha); background: var(--azul-06); -webkit-overflow-scrolling: touch; }
 .hoja-caja:focus { outline: none; }
 /* Costos aprovecha más ancho de pantalla en la compu */
 @media (min-width: 641px) { .vista--costos .contenedor { max-width: 1560px; } }
-.hoja { border-collapse: collapse; table-layout: fixed; font-size: 13.5px; line-height: 1.3; }
+/* Cada cuadro de la pestaña es una ficha blanca con su marco, separada de la siguiente */
+.hoja { box-sizing: content-box; padding: 16px; display: flex; flex-direction: column; gap: 22px; font-size: 13.5px; line-height: 1.3; }
+.cuadro { overflow: hidden; border-radius: var(--radio); background: var(--blanco); box-shadow: 0 0 0 1.5px var(--azul-12), 0 6px 18px -12px rgba(21, 34, 58, .35); }
+.cuadro table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.cuadro tr:first-child td { border-top: 0; }
+.cuadro tr:last-child td { border-bottom: 0; }
+.cuadro td:first-child { border-left: 0; }
+.cuadro td:last-child { border-right: 0; }
+/* Columna vacía del Excel entre dos cuadros lado a lado: hueco del color del fondo */
+.cuadro td.c-hueco { background: var(--azul-06); border-color: var(--azul-06); padding: 0; }
 .hoja td { padding: 6px 8px; border: 1px solid #EDF0F4; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; height: 30px; }
 .hoja td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .hoja td.c-texto { white-space: normal; }

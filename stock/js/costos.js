@@ -146,8 +146,22 @@
     }
     /* Columnas sin nada (separadores del Excel) se angostan, para que la pestaña ocupe menos ancho */
     const usadas = new Set(Object.entries(h.celdas).filter(([, cel]) => cel.f || (cel.v !== undefined && cel.v !== null && cel.v !== "")).map(([a]) => XLSX.utils.decode_cell(a).c));
-    const anchos = Array.from({ length: ultCol + 1 }, (_, c) => (usadas.has(c) ? h.anchos[c] || 72 : 14));
-    let html = `<table class="hoja" style="width:${anchos.reduce((a, b) => a + b, 0)}px"><colgroup>${anchos.map(w => `<col style="width:${w}px">`).join("")}</colgroup><tbody>`;
+    const anchos = Array.from({ length: ultCol + 1 }, (_, c) => (usadas.has(c) ? h.anchos[c] || 72 : 24));
+    /* Cada cuadro va en su propio marco: empieza en una franja de título azul oscuro, o en una franja
+       de sección sola (una celda) después de un renglón vacío, como las secciones del Tablero */
+    const colgroup = `<colgroup>${anchos.map(w => `<col style="width:${w}px">`).join("")}</colgroup>`;
+    const abrirCuadro = `<div class="cuadro"><table>${colgroup}<tbody>`, cerrarCuadro = "</tbody></table></div>";
+    let html = `<div class="hoja" style="width:${anchos.reduce((a, b) => a + b, 0)}px">`;
+    let hayCuadro = false, huboVacia = false, combinadaHasta = -1;
+    const empiezaCuadro = r => {
+      const a = h.celdas[dir(r, 0)];
+      if (!hayCuadro) return true;
+      if (r <= combinadaHasta) return false;   // nunca cortar en medio de celdas combinadas
+      if (a?.c === "17324D") return true;
+      const llenas = Object.keys(h.celdas).filter(k => XLSX.utils.decode_cell(k).r === r && !vacia0(r, XLSX.utils.decode_cell(k).c)).length;
+      return huboVacia && a?.c === "254B6E" && llenas === 1;
+    };
+    const vacia0 = (r, c) => { const x = h.celdas[dir(r, c)]; return !x || (!x.f && (x.v === undefined || x.v === null || x.v === "")); };
 
     for (let r = 0; r < h.filas; r++) {
       let fila = "", llena = false;
@@ -161,11 +175,11 @@
         /* Como en Excel: un texto se extiende sobre las celdas vacías de al lado */
         if (!sp && typeof v === "string" && v && !esEditable(cel)) {
           let n = 0;
-          while (c + n + 1 <= ultCol && !tapadas.has(dir(r, c + n + 1)) && !spans[dir(r, c + n + 1)] && vacia(c + n + 1)) n++;
+          while (c + n + 1 <= ultCol && usadas.has(c + n + 1) && !tapadas.has(dir(r, c + n + 1)) && !spans[dir(r, c + n + 1)] && vacia(c + n + 1)) n++;
           if (n) { sp = { rs: 1, cs: n + 1 }; for (let k = 1; k <= n; k++) tapadas.add(dir(r, c + k)); }
         }
         if (cel && (v !== null && v !== "" || cel.c)) llena = true;
-        const clases = [RELLENOS[cel?.c] ?? "", typeof v === "number" ? "num" : ""];
+        const clases = [RELLENOS[cel?.c] ?? "", typeof v === "number" ? "num" : "", usadas.has(c) || (sp && sp.cs > 1) ? "" : "c-hueco"];
         let estilo = "";
         if (cel?.c && !(cel.c in RELLENOS)) estilo = ` style="background:#${cel.c}"`;
         if (sp && sp.cs > 1 && cel && typeof v === "string" && v.length > 30) clases.push("c-texto");
@@ -175,10 +189,15 @@
         const attrs = `${sp ? `${sp.rs > 1 ? ` rowspan="${sp.rs}"` : ""}${sp.cs > 1 ? ` colspan="${sp.cs}"` : ""}` : ""}${ed ? ` tabindex="0" data-dir="${a}" aria-label="${esc(etiqueta(h, r, c))}"` : ""}`;
         fila += `<td class="${clases.filter(Boolean).join(" ")}${cambio}"${attrs}${estilo}>${mostrar(v, cel?.z)}</td>`;
       }
-      if (llena || filasCombinadas.has(r)) html += `<tr>${fila}</tr>`;
+      if (llena || filasCombinadas.has(r)) {
+        if (empiezaCuadro(r)) { html += (hayCuadro ? cerrarCuadro : "") + abrirCuadro; hayCuadro = true; }
+        html += `<tr>${fila}</tr>`;
+        huboVacia = false;
+        for (const m of h.merges) { const g = XLSX.utils.decode_range(m); if (g.s.r === r) combinadaHasta = Math.max(combinadaHasta, g.e.r); }
+      } else huboVacia = true;
       if (aj.graficos && aj.graficos[r]) html += `<tr class="fila-graficos"><td colspan="${ultCol + 1}"><div class="graficos">${aj.graficos[r].map(g => GRAFICOS[g](h.nombre)).join("")}</div></td></tr>`;
     }
-    html += "</tbody></table>";
+    html += (hayCuadro ? cerrarCuadro : "") + "</div>";
     $("#costos-hoja").innerHTML = html;
     ajustarAncho();
     if (formularioDe !== h.nombre) { formularioDe = h.nombre; pintarAgregar(h.nombre); }
