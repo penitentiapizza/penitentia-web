@@ -13,6 +13,7 @@
   const VAR = window.VARIEDADES;
   const porId = Object.fromEntries(VAR.map(v => [v.id, v]));
   const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const pesos = n => "$ " + Number(n).toLocaleString("es-AR");
 
   let pizzas = [];
   let eliminados = [];   // códigos de pizzas eliminadas: nunca se reusan
@@ -163,8 +164,9 @@
      STOCK
      ========================================================= */
   function estadoDe(p) {
-    if (p.estado === "vendida") return { clase: "vendida", texto: "Vendida" + (p.vendida_el ? " · " + fechaAR(p.vendida_el.slice(0, 10)) : "") + (p.canal ? " · " + p.canal : "") };
+    if (p.estado === "vendida") return { clase: "vendida", texto: "Vendida" + (p.vendida_el ? " · " + fechaAR(p.vendida_el.slice(0, 10)) : "") + (p.canal ? " · " + p.canal : "") + (p.precio_venta ? " · " + pesos(p.precio_venta) : "") };
     if (p.estado === "baja") return { clase: "baja", texto: "De baja" };
+    if (p.estado === "revision") return { clase: "revision", texto: "En revisión" };
     const d = diasHasta(p.vencimiento);
     if (d < 0) return { clase: "vencida", texto: "Vencida" };
     if (d <= 14) return { clase: "pronto", texto: d === 0 ? "Vence hoy" : `Vence en ${d} día${d === 1 ? "" : "s"}` };
@@ -174,6 +176,9 @@
   function pintarResumen() {
     const enStock = pizzas.filter(p => p.estado === "stock");
     $("#num-stock").textContent = enStock.length;
+    const enRevision = pizzas.filter(p => p.estado === "revision").length;
+    $("#num-revision").textContent = enRevision;
+    $("#num-revision").hidden = !enRevision;
     $("#resumen").innerHTML = VAR.map(v => {
       const suyas = enStock.filter(p => p.variedad === v.id);
       const vencidas = suyas.filter(p => diasHasta(p.vencimiento) < 0).length;
@@ -202,9 +207,15 @@
     for (const id of elegidas) if (!lista.some(p => p.id === id)) elegidas.delete(id);
     $("#filas").innerHTML = lista.map(p => {
       const e = estadoDe(p);
+      const REVISAR = `<button type="button" class="btn-icono" data-fila="revision" aria-label="Mandar ${p.codigo} a revisión" title="Mandar a revisión (etiqueta dudosa)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>
+          </button>`;
       let acc = p.estado === "stock"
-        ? `<button type="button" class="btn-fila" data-fila="vender">Vendida</button>`
-        : `<button type="button" class="btn-fila btn-fila--suave" data-fila="stock">Deshacer</button>`;
+        ? `<button type="button" class="btn-fila" data-fila="vender">Vendida</button>${REVISAR}`
+        : p.estado === "revision"
+          ? `<button type="button" class="btn-fila" data-fila="stock">Al freezer</button>
+          <button type="button" class="btn-fila btn-fila--suave" data-fila="vender">Vendida</button>`
+          : `<button type="button" class="btn-fila btn-fila--suave" data-fila="stock">Deshacer</button>`;
       if (p.estado === "baja") acc += `
           <button type="button" class="btn-icono" data-fila="eliminar" aria-label="Eliminar definitivamente ${p.codigo}" title="Eliminar definitivamente">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg>
@@ -261,29 +272,74 @@
     } catch (e) { avisar("No se pudo eliminar: " + e.message); }
   }
 
+  /* Precio publicado en la web en este momento para cada variedad (del catálogo, no de la web en caché) */
+  async function preciosPublicados() {
+    const lista = await D.catalogo.listar();
+    const clave = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+    return Object.fromEntries(VAR.map(v => {
+      const f = lista.find(x => x.id === (v.web || v.id)) || lista.find(x => clave(x.nombre) === clave(v.nombre))
+        || lista.find(x => clave(x.nombre).startsWith(clave(v.nombre)) || clave(x.receta).startsWith(clave(v.nombre)));
+      return [v.id, f && f.precio > 0 ? f.precio : null];
+    }));
+  }
+
+  /* Guarda; si la base todavía no tiene la columna precio_venta (falta el SQL), guarda sin el precio y avisa */
+  let faltaColumnaPrecio = false;
+  async function actualizarConPrecio(ids, campos) {
+    if (!("precio_venta" in campos)) return D.actualizar(ids, campos);
+    try { return await D.actualizar(ids, campos); }
+    catch (e) {
+      if (!/precio_venta/.test(e.message)) throw e;
+      faltaColumnaPrecio = true;
+      const { precio_venta, ...resto } = campos;
+      return D.actualizar(ids, resto);
+    }
+  }
+
   async function cambiarEstado(ids, estado, { silencio = false } = {}) {
     if (!ids.length) return;
-    const antes = pizzas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, estado: p.estado, vendida_el: p.vendida_el, canal: p.canal }));
-    const campos = estado === "vendida"
-      ? { estado, vendida_el: new Date().toISOString(), canal: $("#canal").value || null }
-      : { estado, vendida_el: null, canal: null };
+    const antes = pizzas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, estado: p.estado, vendida_el: p.vendida_el, canal: p.canal, precio_venta: p.precio_venta ?? null }));
+    let precios = {}, sinPrecio = false;
+    if (estado === "vendida") {
+      try { precios = await preciosPublicados(); } catch { sinPrecio = true; }
+    }
     try {
-      const cambiadas = await D.actualizar(ids, campos);
+      let cambiadas;
+      if (estado === "vendida") {
+        /* Cada variedad con su precio: se guardan por grupo */
+        const ahora = new Date().toISOString(), canal = $("#canal").value || null;
+        const grupos = {};
+        for (const id of ids) { const v = pizzas.find(p => p.id === id).variedad; (grupos[v] = grupos[v] || []).push(id); }
+        cambiadas = [];
+        for (const [v, suyas] of Object.entries(grupos)) {
+          if (!precios[v]) sinPrecio = true;
+          cambiadas.push(...await actualizarConPrecio(suyas, { estado, vendida_el: ahora, canal, precio_venta: precios[v] ?? null }));
+        }
+      } else {
+        const conPrecio = pizzas.some(p => ids.includes(p.id) && p.precio_venta != null);
+        cambiadas = await actualizarConPrecio(ids, { estado, vendida_el: null, canal: null, ...(conPrecio ? { precio_venta: null } : {}) });
+      }
       const m = Object.fromEntries(cambiadas.map(p => [p.id, p]));
       pizzas = pizzas.map(p => m[p.id] ?? p);
       ids.forEach(id => elegidas.delete(id));
       refrescar();
       if (silencio) return;
-      const que = { vendida: "vendida", stock: "de vuelta en el freezer", baja: "dada de baja" }[estado];
-      const texto = ids.length === 1 ? `${m[ids[0]].codigo} ${que}` : `${ids.length} pizzas: ${que.replace("vendida", "vendidas").replace("dada", "dadas")}`;
+      const que = { vendida: "vendida", stock: "de vuelta en el freezer", baja: "dada de baja", revision: "en revisión" }[estado];
+      let texto = ids.length === 1 ? `${m[ids[0]].codigo} ${que}` : `${ids.length} pizzas: ${que.replace("vendida", "vendidas").replace("dada", "dadas")}`;
+      if (estado === "vendida" && ids.length === 1 && m[ids[0]].precio_venta) texto += ` a ${pesos(m[ids[0]].precio_venta)}`;
+      if (estado === "vendida" && faltaColumnaPrecio) texto += " (sin precio: falta el SQL «PRECIO DE VENTA Y REVISIÓN» en Supabase)";
+      else if (estado === "vendida" && sinPrecio) texto += " (sin precio: no lo encontré en el catálogo web)";
       avisar(texto, { texto: "Deshacer", fn: () => deshacer(antes) });
-    } catch (e) { avisar("No se guardó: " + e.message); }
+    } catch (e) {
+      avisar("No se guardó: " + (/precio_venta|revision|check constraint/i.test(e.message) ? "falta actualizar la base (parte «PRECIO DE VENTA Y REVISIÓN» de supabase.sql)." : e.message));
+    }
   }
 
   async function deshacer(antes) {
     try {
       for (const a of antes) {
-        const [p] = await D.actualizar([a.id], { estado: a.estado, vendida_el: a.vendida_el, canal: a.canal });
+        const tocaPrecio = a.precio_venta != null || pizzas.find(x => x.id === a.id)?.precio_venta != null;
+        const [p] = await actualizarConPrecio([a.id], { estado: a.estado, vendida_el: a.vendida_el, canal: a.canal, ...(tocaPrecio ? { precio_venta: a.precio_venta } : {}) });
         pizzas = pizzas.map(x => (x.id === p.id ? p : x));
       }
       refrescar();
@@ -314,7 +370,7 @@
     if (b) {
       if (b.dataset.fila === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => p.id === id));
       else if (b.dataset.fila === "eliminar") eliminar([id]);
-      else cambiarEstado([id], b.dataset.fila === "vender" ? "vendida" : "stock");
+      else cambiarEstado([id], b.dataset.fila === "vender" ? "vendida" : b.dataset.fila);
       return;
     }
     if (e.target.matches("input[type=checkbox]") || e.target.closest(".col-codigo, .col-variedad")) {
@@ -334,7 +390,7 @@
     const a = b.dataset.accion;
     if (a === "limpiar") { elegidas.clear(); pintarTabla(); }
     else if (a === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => elegidas.has(p.id)).sort((x, y) => x.codigo.localeCompare(y.codigo, "es", { numeric: true })));
-    else if (a === "vender") cambiarEstado(ids.filter(id => pizzas.find(p => p.id === id).estado === "stock"), "vendida");
+    else if (a === "vender") cambiarEstado(ids.filter(id => ["stock", "revision"].includes(pizzas.find(p => p.id === id).estado)), "vendida");
     else if (a === "eliminar") eliminar(ids);
     else cambiarEstado(ids, a);
   });

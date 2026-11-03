@@ -209,3 +209,18 @@ create policy "Equipo cambia fotos del catalogo" on storage.objects
 drop policy if exists "Equipo borra fotos del catalogo" on storage.objects;
 create policy "Equipo borra fotos del catalogo" on storage.objects
   for delete to authenticated using (bucket_id = 'catalogo');
+
+
+-- =========================================================
+-- PRECIO DE VENTA Y REVISIÓN (agregado el 03/11/2026)
+-- - precio_venta: al marcar una pizza vendida se guarda el precio que
+--   tenía publicado en la web en ese momento.
+-- - estado «revision»: pizzas con la etiqueta dudosa (por ejemplo, si se
+--   mezclaron), apartadas hasta revisarlas.
+-- =========================================================
+
+alter table public.pizzas add column if not exists precio_venta int check (precio_venta > 0);
+
+alter table public.pizzas drop constraint if exists pizzas_estado_check;
+alter table public.pizzas add constraint pizzas_estado_check
+  check (estado in ('stock', 'vendida', 'baja', 'revision'));

@@ -80,3 +80,13 @@ Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla 
 - **Fotos:** se recortan a 4:3 y se achican en el teléfono (800 y 480 px, WebP) antes de subir. Quedan en Supabase Storage, carpeta `catalogo` (pública: la web las muestra).
 - **Respaldo:** si Supabase no responde (por ejemplo, si pausó el proyecto), la web muestra la última lista que vio ese navegador o, si nunca la vio, la de `js/productos.js`.
 - **Primera vez:** pegá la parte «CATÁLOGO WEB» de `supabase.sql` en Supabase → SQL Editor → Run. Crea la tabla con las 7 variedades que había en la web y la carpeta de fotos.
+
+## Precio de venta y revisión (03/11/2026)
+
+- **Precio de venta:** al marcar una pizza vendida (por fila, por código o varias juntas) se guarda el precio que tenía publicado en el catálogo web en ese momento. Se ve en el estado («Vendida · 03/11/2026 · WhatsApp · $ 8.000»). «Deshacer» lo borra. Si la variedad no está en el catálogo, se vende igual, sin precio, y avisa.
+- **En revisión:** para una pizza con la etiqueta dudosa (por ejemplo, si se mezclaron). El ícono de banderita en la fila o «A revisión» con varias elegidas la aparta; no cuenta como freezer ni como vendida. En el filtro **En revisión** (con el número de pizzas) se devuelve **Al freezer** o se marca **Vendida**.
+- **Primera vez:** pegá la parte «PRECIO DE VENTA Y REVISIÓN» de `supabase.sql` en Supabase → SQL Editor → Run. Sin eso las ventas se guardan igual, pero sin precio.
+
+## Prefermento (Costos → Recetas)
+
+Cuadro debajo de **PRODUCCIÓN (¿cuánto necesito?)** del bollo, vinculado a sus totales: harina y agua en partes iguales (100 % del agua total) y levadura 4 g por kg de esa harina. La columna **Después** dice lo que falta agregar al amasar: el resto de la harina y de la levadura, y la sal. Las proporciones (100 %, 100 %, 4 g/kg) son celdas amarillas. La página lo agrega sola la primera vez que se abre Costos.

@@ -124,6 +124,7 @@
           <div class="filtros">
             <div class="segmentos" role="group" aria-label="Estado">
               <button type="button" data-estado="stock" aria-pressed="true">En freezer</button>
+              <button type="button" data-estado="revision" aria-pressed="false">En revisión <span class="segmentos__num" id="num-revision" hidden>0</span></button>
               <button type="button" data-estado="vendida" aria-pressed="false">Vendidas</button>
               <button type="button" data-estado="baja" aria-pressed="false">De baja</button>
               <button type="button" data-estado="" aria-pressed="false">Todas</button>
@@ -162,6 +163,7 @@
           <span id="acciones-num"></span>
           <button type="button" class="btn btn--blanco" data-accion="vender">Marcar vendidas</button>
           <button type="button" class="btn btn--contorno" data-accion="imprimir">Imprimir etiquetas</button>
+          <button type="button" class="btn btn--contorno" data-accion="revision">A revisión</button>
           <button type="button" class="btn btn--contorno" data-accion="stock">Volver al freezer</button>
           <button type="button" class="btn btn--contorno" data-accion="baja">Dar de baja</button>
           <button type="button" class="btn btn--contorno" data-accion="eliminar" hidden>Eliminar definitivamente</button>

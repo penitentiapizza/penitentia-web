@@ -622,6 +622,74 @@
     return { hoja: h.nombre, fila: -1, aviso: `«${nombre}» quitado de ${recetas.length > 1 ? recetas.length + " recetas" : receta}.` };
   }
 
+  /* ----- Prefermento: cuadro debajo de PRODUCCIÓN del bollo, con fórmulas vinculadas a esa producción -----
+     Harina y agua en partes iguales (100 % del agua total del bollo) y levadura 4 g por kg de esa harina.
+     La sal y lo que falta de harina y levadura van después. Se agrega una sola vez; después se edita como
+     cualquier cuadro (las proporciones son celdas amarillas). */
+  const sinTildes = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  const celdaVacia = (h, r, c) => { const x = h.celdas[dir(r, c)]; return !x || (!x.f && (x.v === undefined || x.v === null || x.v === "")); };
+  function asegurarPrefermento() {
+    const h = hojaModelo("Recetas"); if (!h) return false;
+    if (Object.values(h.celdas).some(x => typeof x.v === "string" && /^\s*PREFERMENTO/i.test(x.v))) return false;
+    const C0 = 7;   // columna H, donde está PRODUCCIÓN
+    let prod = -1, fin = -1;
+    for (let r = 0; r < h.filas && prod < 0; r++) if (/^produccion/.test(sinTildes(texto(h, r, C0)))) prod = r;
+    if (prod < 0) return false;
+    const fila = {};
+    for (let r = prod + 1; r < h.filas && fin < 0; r++) {
+      if (/costo total/.test(sinTildes(texto(h, r, C0 + 3)))) { fin = r; break; }
+      const n = sinTildes(texto(h, r, C0));
+      for (const [k, re] of [["harina", /harina/], ["agua", /^agua/], ["levadura", /levadura/], ["sal", /^sal\b/]]) if (re.test(n) && fila[k] === undefined) fila[k] = r;
+    }
+    if (fin < 0 || ["harina", "agua", "levadura", "sal"].some(k => fila[k] === undefined)) return false;
+
+    /* Lugar: 8 renglones libres en H:L, con uno vacío antes de la primera receta; si no hay, se hacen */
+    const ALTO = 8;
+    const libre = r => [0, 1, 2, 3, 4].every(c => celdaVacia(h, r, C0 + c));
+    const primera = bloquesRecetas(h)[0]?.titulo ?? h.filas;
+    let s = -1;
+    for (let r = fin + 1; r + ALTO <= primera - 1 && s < 0; r++) if (Array.from({ length: ALTO }, (_, i) => libre(r + i)).every(Boolean)) s = r;
+    if (s < 0) { s = primera; for (let i = 0; i <= ALTO; i++) insertarFila(h, primera); }
+
+    const col = c => letra(C0 + c), F = r => r + 1;   // letra de columna y número de fila como en Excel
+    const K = r => `${col(3)}${F(r)}`;
+    const formato = h.celdas[dir(fila.harina, C0 + 3)]?.z;
+    const celda = (r, c, contenido, estilo = {}) => { h.celdas[dir(r, C0 + c)] = { ...estilo }; poner(h, r, C0 + c, contenido); };
+    const combinar = r => h.merges.push(`${col(0)}${F(r)}:${col(4)}${F(r)}`);
+    const calc = { c: "EAF4EC", ...(formato ? { z: formato } : {}) }, amarilla = { c: "FFF2CC" };
+
+    celda(s, 0, "PREFERMENTO  (se hace antes del amasado)", { c: "17324D" }); combinar(s);
+    celda(s + 1, 0, "Harina y agua en partes iguales (100 % del agua del bollo) más levadura. La sal y el resto de la harina y de la levadura van después.", { c: "F7F2EA" }); combinar(s + 1);
+    ["Ingrediente", "Unidad", "Proporción", "Prefermento", "Después"].forEach((t, c) => celda(s + 2, c, t, { c: "254B6E" }));
+    const filas = [
+      ["harina", 1, { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 3)},0)`, `=IFERROR(MAX(0,${K(fila.harina)}-${K(s + 3)}),0)`],
+      ["agua", 1, { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 4)},0)`, `=IFERROR(MAX(0,${K(fila.agua)}-${K(s + 4)}),0)`],
+      ["levadura", 4, { ...amarilla, z: '0" g/kg"' }, `=IFERROR(${K(s + 3)}*${col(2)}${F(s + 5)}/1000,0)`, `=IFERROR(MAX(0,${K(fila.levadura)}-${K(s + 5)}),0)`],
+      ["sal", "después", {}, 0, `=IFERROR(${K(fila.sal)}+0,0)`],
+    ];
+    filas.forEach(([k, prop, estiloProp, pre, despues], i) => {
+      const r = s + 3 + i, par = i % 2 ? { c: "FAFBFC" } : {};
+      celda(r, 0, `=${col(0)}${F(fila[k])}`, par);
+      celda(r, 1, `=${col(1)}${F(fila[k])}`, par);
+      celda(r, 2, prop, Object.keys(estiloProp).length ? estiloProp : par);
+      celda(r, 3, pre, calc);
+      celda(r, 4, despues, calc);
+    });
+    const t = s + 7, total = { c: "3F6B54", ...(formato ? { z: formato } : {}) };
+    celda(t, 0, "TOTAL", total); celda(t, 1, null, total); celda(t, 2, null, total);
+    celda(t, 3, `=SUM(${K(s + 3)}:${K(s + 6)})`, total);
+    celda(t, 4, `=SUM(${col(4)}${F(s + 3)}:${col(4)}${F(s + 6)})`, total);
+    h.filas = Math.max(h.filas, t + 1);
+    h.cols = Math.max(h.cols, C0 + 5);
+    return true;
+  }
+
+  /* Si algo de la pestaña no tiene la forma esperada, no se agrega y el libro sigue como estaba */
+  function agregarPrefermento() {
+    try { const ok = asegurarPrefermento(); if (ok) sincronizarFormulas(); return ok; }
+    catch (e) { console.warn("No se pudo agregar el prefermento:", e.message); return false; }
+  }
+
   /* Filas de Precios y Rentabilidad que muestran cada receta (por la fórmula que apunta a su total) */
   function filasRentabilidad(totalFila) {
     const h = hojaModelo("Precios y Rentabilidad"); if (!h) return { h, c1: [], c2: [], propias: [] };
@@ -957,8 +1025,10 @@
         modelo = await D.costos.leer();
         $("#costos-falta").hidden = true;
         if (modelo) armarMotor();
+        const conPrefermento = modelo && agregarPrefermento();
         mostrarLibro();
         estado(modelo ? "Guardado" : "", modelo ? "ok" : "");
+        if (conPrefermento) { programarGuardado(); avisar("Agregué el cuadro Prefermento en Recetas, debajo de PRODUCCIÓN del bollo."); }
         publicarPrecios();   // por si Costos cambió desde otro equipo o el catálogo es nuevo
       } catch (e) {
         cargando = null;
@@ -983,6 +1053,7 @@
       if (!nuevo.hojas.length) throw new Error("El archivo no tiene pestañas.");
       modelo = nuevo;
       armarMotor();
+      agregarPrefermento();
       mostrarLibro();
       await guardarYa();
       const formulas = modelo.hojas.reduce((a, h) => a + Object.values(h.celdas).filter(c => c.f).length, 0);

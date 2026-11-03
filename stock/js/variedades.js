@@ -7,13 +7,15 @@
    - peso:    contenido neto sugerido en gramos. Se puede cambiar al generar
               y el sistema recuerda el último que usaste. Vacío = línea para completar.
    - foto:    foto de la web (carpeta ../img).
+   - web:     id de la pizza en el catálogo web, si no es el mismo (de ahí sale
+              el precio con que se registra cada venta).
    ========================================================= */
 
 const ALERGENOS_TL = "ALÉRGENOS: CONTIENE TRIGO (GLUTEN) Y LECHE.";
 const FIN = "aceite de oliva, sal, orégano y levadura.";
 
 window.VARIEDADES = [
-  { id: "mozzarella", codigo: "MO", nombre: "Mozzarella", peso: 825,
+  { id: "mozzarella", codigo: "MO", nombre: "Mozzarella", peso: 825, web: "muzzarella",
     propuesta: "Salsa de tomate, mozzarella, aceite de oliva y orégano",
     ingredientes: "Harina de trigo, mozzarella, salsa de tomate, agua, " + FIN,
     foto: "../img/p-muzzarella-480.webp" },
