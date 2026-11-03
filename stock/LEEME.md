@@ -89,4 +89,4 @@ Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla 
 
 ## Prefermento (Costos → Recetas)
 
-Cuadro debajo de **PRODUCCIÓN (¿cuánto necesito?)** del bollo, vinculado a sus totales: harina y agua en partes iguales (100 % del agua total) y levadura 4 g por kg de esa harina. La columna **Después** dice lo que falta agregar al amasar: el resto de la harina y de la levadura, y la sal. Las proporciones (100 %, 100 %, 4 g/kg) son celdas amarillas. La página lo agrega sola la primera vez que se abre Costos.
+Cuadro justo debajo de **PRODUCCIÓN (¿cuánto necesito?)** del bollo (RECETA BASE Y PROPORCIONES queda más abajo), vinculado a sus totales: harina y agua en partes iguales (100 % del agua total) y levadura 4 g por kg de esa harina. La columna **Después** dice lo que falta agregar al amasar: el resto de la harina y de la levadura, y la sal. Las proporciones (100 %, 100 %, 4 g/kg) son celdas amarillas. La página lo agrega sola la primera vez que se abre Costos.

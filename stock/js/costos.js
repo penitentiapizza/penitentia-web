@@ -157,11 +157,14 @@
       const a = h.celdas[dir(r, 0)];
       if (!hayCuadro) return true;
       if (r <= combinadaHasta) return false;   // nunca cortar en medio de celdas combinadas
-      if (a?.c === "17324D") return true;
+      if (a?.c === "17324D") return !derechaOcupada(r - 1);   // no cortar un cuadro de la derecha por la mitad
       const llenas = Object.keys(h.celdas).filter(k => XLSX.utils.decode_cell(k).r === r && !vacia0(r, XLSX.utils.decode_cell(k).c)).length;
       return huboVacia && a?.c === "254B6E" && llenas === 1;
     };
     const vacia0 = (r, c) => { const x = h.celdas[dir(r, c)]; return !x || (!x.f && (x.v === undefined || x.v === null || x.v === "")); };
+    const primerHueco = Array.from({ length: ultCol + 1 }, (_, c) => c).find(c => !usadas.has(c)) ?? ultCol + 1;
+    const derechaOcupada = r => r >= 0 && Array.from({ length: ultCol - primerHueco }, (_, i) => primerHueco + 1 + i)
+      .some(c => !vacia0(r, c) || !!h.celdas[dir(r, c)]?.c);
 
     for (let r = 0; r < h.filas; r++) {
       let fila = "", llena = false;
@@ -179,7 +182,10 @@
           if (n) { sp = { rs: 1, cs: n + 1 }; for (let k = 1; k <= n; k++) tapadas.add(dir(r, c + k)); }
         }
         if (cel && (v !== null && v !== "" || cel.c)) llena = true;
-        const clases = [RELLENOS[cel?.c] ?? "", typeof v === "number" ? "num" : "", usadas.has(c) || (sp && sp.cs > 1) ? "" : "c-hueco"];
+        const hueco = !usadas.has(c) && !(sp && sp.cs > 1);
+        /* En el hueco entre dos cuadros lado a lado va una línea, sólo a la altura de los cuadros */
+        const conAlgo = cc => cc >= 0 && cc <= ultCol && (tapadas.has(dir(r, cc)) || !!h.celdas[dir(r, cc)]?.c || !vacia(cc));
+        const clases = [RELLENOS[cel?.c] ?? "", typeof v === "number" ? "num" : "", hueco ? "c-hueco" : "", hueco && (conAlgo(c - 1) || conAlgo(c + 1)) ? "c-linea" : ""];
         let estilo = "";
         if (cel?.c && !(cel.c in RELLENOS)) estilo = ` style="background:#${cel.c}"`;
         if (sp && sp.cs > 1 && cel && typeof v === "string" && v.length > 30) clases.push("c-texto");
@@ -630,7 +636,6 @@
   const celdaVacia = (h, r, c) => { const x = h.celdas[dir(r, c)]; return !x || (!x.f && (x.v === undefined || x.v === null || x.v === "")); };
   function asegurarPrefermento() {
     const h = hojaModelo("Recetas"); if (!h) return false;
-    if (Object.values(h.celdas).some(x => typeof x.v === "string" && /^\s*PREFERMENTO/i.test(x.v))) return false;
     const C0 = 7;   // columna H, donde está PRODUCCIÓN
     let prod = -1, fin = -1;
     for (let r = 0; r < h.filas && prod < 0; r++) if (/^produccion/.test(sinTildes(texto(h, r, C0)))) prod = r;
@@ -643,13 +648,35 @@
     }
     if (fin < 0 || ["harina", "agua", "levadura", "sal"].some(k => fila[k] === undefined)) return false;
 
-    /* Lugar: 8 renglones libres en H:L, con uno vacío antes de la primera receta; si no hay, se hacen */
-    const ALTO = 8;
-    const libre = r => [0, 1, 2, 3, 4].every(c => celdaVacia(h, r, C0 + c));
-    const primera = bloquesRecetas(h)[0]?.titulo ?? h.filas;
-    let s = -1;
-    for (let r = fin + 1; r + ALTO <= primera - 1 && s < 0; r++) if (Array.from({ length: ALTO }, (_, i) => libre(r + i)).every(Boolean)) s = r;
-    if (s < 0) { s = primera; for (let i = 0; i <= ALTO; i++) insertarFila(h, primera); }
+    /* Lugar: justo debajo de PRODUCCIÓN, con un renglón vacío en el medio. Lo que haya ahí en H:L
+       (RECETA BASE Y PROPORCIONES) baja; si no entra antes de la primera receta, se hacen renglones. */
+    const ALTO = 8, s = fin + 2;
+    const enH = (r, c = 0) => h.celdas[dir(r, C0 + c)];
+    let viejo = -1;
+    for (let r = 0; r < h.filas && viejo < 0; r++) if (typeof enH(r)?.v === "string" && /^\s*PREFERMENTO/i.test(enH(r).v)) viejo = r;
+    if (viejo === s) return false;   // ya está en su lugar
+    const proporciones = [1, 1, 4];
+    if (viejo >= 0) {
+      /* Estaba en otro lado (primera versión): se saca de ahí, guardando las proporciones que hayas cambiado */
+      for (let i = 0; i < 3; i++) { const x = enH(viejo + 3 + i, 2); if (typeof x?.v === "number") proporciones[i] = x.v; }
+      for (let r = viejo; r < viejo + ALTO; r++) vaciar(h, r, C0, C0 + 4);
+      h.merges = h.merges.filter(m => { const g = XLSX.utils.decode_range(m); return !(g.s.r >= viejo && g.s.r < viejo + ALTO && g.s.c >= C0 && g.e.c <= C0 + 4); });
+    }
+    const libre = r => [0, 1, 2, 3, 4].every(c => celdaVacia(h, r, C0 + c) && !h.celdas[dir(r, C0 + c)]?.c);
+    let primera = bloquesRecetas(h)[0]?.titulo ?? h.filas;
+    let ult = -1;
+    for (let r = s; r < primera; r++) if (!libre(r)) ult = r;
+    const baja = ALTO + 1;
+    const ultimaOcupada = ult >= 0 ? ult + baja : s + ALTO - 1;
+    for (let falta = ultimaOcupada - (primera - 2); falta > 0; falta--) { insertarFila(h, primera); primera++; }
+    if (ult >= 0) {
+      correrCeldas(h, C0, C0 + 4, s, ult, baja);
+      h.merges = h.merges.map(m => {
+        const g = XLSX.utils.decode_range(m);
+        if (g.s.r >= s && g.s.r <= ult && g.s.c >= C0 && g.e.c <= C0 + 4) { g.s.r += baja; g.e.r += baja; }
+        return XLSX.utils.encode_range(g);
+      });
+    }
 
     const col = c => letra(C0 + c), F = r => r + 1;   // letra de columna y número de fila como en Excel
     const K = r => `${col(3)}${F(r)}`;
@@ -662,9 +689,9 @@
     celda(s + 1, 0, "Harina y agua en partes iguales (100 % del agua del bollo) más levadura. La sal y el resto de la harina y de la levadura van después.", { c: "F7F2EA" }); combinar(s + 1);
     ["Ingrediente", "Unidad", "Proporción", "Prefermento", "Después"].forEach((t, c) => celda(s + 2, c, t, { c: "254B6E" }));
     const filas = [
-      ["harina", 1, { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 3)},0)`, `=IFERROR(MAX(0,${K(fila.harina)}-${K(s + 3)}),0)`],
-      ["agua", 1, { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 4)},0)`, `=IFERROR(MAX(0,${K(fila.agua)}-${K(s + 4)}),0)`],
-      ["levadura", 4, { ...amarilla, z: '0" g/kg"' }, `=IFERROR(${K(s + 3)}*${col(2)}${F(s + 5)}/1000,0)`, `=IFERROR(MAX(0,${K(fila.levadura)}-${K(s + 5)}),0)`],
+      ["harina", proporciones[0], { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 3)},0)`, `=IFERROR(MAX(0,${K(fila.harina)}-${K(s + 3)}),0)`],
+      ["agua", proporciones[1], { ...amarilla, z: '0%" agua"' }, `=IFERROR(${K(fila.agua)}*${col(2)}${F(s + 4)},0)`, `=IFERROR(MAX(0,${K(fila.agua)}-${K(s + 4)}),0)`],
+      ["levadura", proporciones[2], { ...amarilla, z: '0" g/kg"' }, `=IFERROR(${K(s + 3)}*${col(2)}${F(s + 5)}/1000,0)`, `=IFERROR(MAX(0,${K(fila.levadura)}-${K(s + 5)}),0)`],
       ["sal", "después", {}, 0, `=IFERROR(${K(fila.sal)}+0,0)`],
     ];
     filas.forEach(([k, prop, estiloProp, pre, despues], i) => {

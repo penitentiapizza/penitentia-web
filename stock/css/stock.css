@@ -533,6 +533,8 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .cuadro td:last-child { border-right: 0; }
 /* Columna vacía del Excel entre dos cuadros lado a lado: hueco del color del fondo */
 .cuadro td.c-hueco { background: var(--azul-06); border-color: var(--azul-06); padding: 0; }
+.cuadro td.c-hueco { border-top: 0; border-bottom: 0; }
+.cuadro td.c-linea { background: linear-gradient(var(--azul), var(--azul)) center / 3px 100% no-repeat, var(--azul-06); }
 .hoja td { padding: 6px 8px; border: 1px solid #EDF0F4; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; height: 30px; }
 .hoja td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .hoja td.c-texto { white-space: normal; }
