@@ -30,7 +30,7 @@ window.PENITENTIA_CATALOGO_NUBE = {
 window.PENITENTIA_PRODUCTOS = [
   {
     id: "muzzarella",
-    nombre: "Muzzarella",
+    nombre: "Mozzarella",
     descripcion: "Salsa de tomate, mozzarella, aceite de oliva y orégano.",
     precio: 8000,
     foto: "img/p-muzzarella-800.webp",

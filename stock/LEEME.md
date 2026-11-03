@@ -59,7 +59,7 @@ Es el Excel «2 - Costos/Costos Penitentia.xlsx» dentro de la página, con las 
 - **Editar:** se tocan las celdas amarillas (y los números de las celdas color crema, como «Cantidad de pizzas»). Se aceptan `1.500,50`, `30%` o una cuenta como `=5000/0,49`. Lo que cambia por el recálculo parpadea un instante. Se guarda solo.
 - **Sin Excel:** todo se hace desde la página. Arriba de cada pestaña hay una barra de acciones:
   - **Precios Insumos:** agregar, renombrar o quitar un insumo (no deja quitar uno que se usa en una receta o en el consumo).
-  - **Recetas:** agregar o quitar un ingrediente, crear una **receta nueva** copiando otra (aparece sola en Precios y Rentabilidad y en el Tablero), renombrarla o quitarla. Si quitás un ingrediente de la base en la receta de Muzzarella, pregunta si sacarlo de todas las que la copian; si lo quitás en otra receta, sale sólo de esa.
+  - **Recetas:** agregar o quitar un ingrediente, crear una **receta nueva** copiando otra (aparece sola en Precios y Rentabilidad y en el Tablero), renombrarla o quitarla. Si quitás un ingrediente de la base en la receta de Mozzarella, pregunta si sacarlo de todas las que la copian; si lo quitás en otra receta, sale sólo de esa.
   - **Costos Fijos:** agregar, renombrar o quitar un concepto.
   - **Insumos:** agregar o quitar artículos del consumo mensual de limpieza y descartables.
   Los renglones nuevos se insertan antes del último de su sección, así las sumas los incluyen solos.

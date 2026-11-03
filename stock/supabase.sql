@@ -181,7 +181,7 @@ grant select (id, nombre, descripcion, precio, foto, disponible, orden) on publi
 
 -- Las 7 variedades que había en la web (js/productos.js) el 02/11/2026
 insert into public.catalogo (id, receta, nombre, descripcion, precio, foto, mostrar, disponible, orden) values
-  ('muzzarella',        'Muzzarella',                            'Muzzarella',        'Salsa de tomate, mozzarella, aceite de oliva y orégano.',                     8000,  'img/p-muzzarella-800.webp', true, true, 1),
+  ('muzzarella',        'Mozzarella',                            'Mozzarella',        'Salsa de tomate, mozzarella, aceite de oliva y orégano.',                     8000,  'img/p-muzzarella-800.webp', true, true, 1),
   ('fugazza-con-queso', 'Fugazza con queso',                     'Fugazza con queso', 'Salsa de tomate, mozzarella y cebolla.',                                      8800,  'img/p-fugazza-800.webp',    true, true, 2),
   ('provolone',         'Provolone',                             'Provolone',         'Salsa de tomate, mozzarella y provolone.',                                    10500, '',                          true, true, 3),
   ('jamon-y-morron',    'Jamón y morrón',                        'Jamón y morrón',    'Salsa de tomate, mozzarella, jamón cocido y morrón.',                         13000, 'img/p-jamon-800.webp',      true, true, 4),

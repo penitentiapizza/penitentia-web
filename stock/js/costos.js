@@ -711,6 +711,25 @@
     return true;
   }
 
+  /* «Muzzarella» → «Mozzarella» en todo el libro (pedido el 03/11/2026). Se cambian los textos y lo que está
+     entre comillas en las fórmulas, así los BUSCARV siguen encontrando el mismo insumo. Si cambia el nombre
+     de una receta, el catálogo web lo sigue. Devuelve cuántas celdas cambió (0 si ya estaba). */
+  function corregirMozzarella() {
+    const cambiar = s => s.replace(/Muzzarella/g, "Mozzarella").replace(/MUZZARELLA/g, "MOZZARELLA").replace(/muzzarella/g, "mozzarella");
+    let n = 0;
+    for (const h of modelo.hojas) for (const cel of Object.values(h.celdas)) {
+      let tocada = false;
+      if (cel.f && /muzzarella/i.test(cel.f)) { cel.f = cel.f.split(/("[^"]*")/).map((t, i) => (i % 2 ? cambiar(t) : t)).join(""); tocada = true; }
+      if (typeof cel.v === "string" && /muzzarella/i.test(cel.v)) {
+        const receta = !cel.f && h.nombre === "Recetas" && cel.v.match(/Receta:\s*(.*)$/i);
+        if (receta) renombres.push([receta[1].trim(), cambiar(receta[1].trim())]);
+        cel.v = cambiar(cel.v); tocada = true;
+      }
+      if (tocada) n++;
+    }
+    return n;
+  }
+
   /* Si algo de la pestaña no tiene la forma esperada, no se agrega y el libro sigue como estaba */
   function agregarPrefermento() {
     try { const ok = asegurarPrefermento(); if (ok) sincronizarFormulas(); return ok; }
@@ -1051,11 +1070,14 @@
         await bibliotecas();
         modelo = await D.costos.leer();
         $("#costos-falta").hidden = true;
+        const conMozzarella = modelo && corregirMozzarella();
         if (modelo) armarMotor();
         const conPrefermento = modelo && agregarPrefermento();
         mostrarLibro();
         estado(modelo ? "Guardado" : "", modelo ? "ok" : "");
-        if (conPrefermento) { programarGuardado(); avisar("Agregué el cuadro Prefermento en Recetas, debajo de PRODUCCIÓN del bollo."); }
+        if (conPrefermento || conMozzarella) programarGuardado();
+        if (conPrefermento) avisar("Agregué el cuadro Prefermento en Recetas, debajo de PRODUCCIÓN del bollo.");
+        else if (conMozzarella) avisar(`Cambié «Muzzarella» por «Mozzarella» en ${conMozzarella} celda${conMozzarella > 1 ? "s" : ""} de Costos.`);
         publicarPrecios();   // por si Costos cambió desde otro equipo o el catálogo es nuevo
       } catch (e) {
         cargando = null;
@@ -1079,6 +1101,7 @@
       const nuevo = leerExcel(await archivo.arrayBuffer(), archivo.name);
       if (!nuevo.hojas.length) throw new Error("El archivo no tiene pestañas.");
       modelo = nuevo;
+      corregirMozzarella();
       armarMotor();
       agregarPrefermento();
       mostrarLibro();
