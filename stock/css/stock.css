@@ -469,6 +469,9 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .cat__precio { margin-right: auto; display: flex; flex-direction: column; line-height: 1.25; }
 .cat__precio b { font-size: 20px; }
 .cat__precio span { font-size: 12px; color: var(--azul-70); }
+.cat__precio--mano { max-width: 190px; }
+.cat__precio--mano > span { font-size: 12px; }
+.cat__precio--mano input { font-weight: 700; font-size: 18px; }
 .cat__orden { display: flex; }
 .cat__orden .btn-icono { margin: 0; }
 .cat__orden .btn-icono:disabled { opacity: .3; cursor: default; background: none; }

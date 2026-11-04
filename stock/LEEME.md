@@ -71,7 +71,7 @@ Es el Excel «2 - Costos/Costos Penitentia.xlsx» dentro de la página, con las 
 
 Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla `catalogo`); sin usuario sólo se pueden leer las pizzas tildadas y sólo nombre, descripción, precio, foto, stock y orden. Costos, márgenes y recetas no salen nunca.
 
-- **Precios:** los pone Costos solo. Cada vez que se guarda algo en Costos, el precio de venta de cada receta (Precios y Rentabilidad, cuadro 2) pasa al catálogo redondeado a $100 (8.750 → 8.800). Abajo aparece un aviso con lo que cambió. **Traer precios de Costos** hace lo mismo a mano.
+- **Precios (desde el 03/11/2026):** se escriben a mano en cada ficha del Catálogo; Costos ya no los cambia. Para volver al precio automático: `PRECIO_DESDE_COSTOS = true` en `js/catalogo.js`. Antes: Cada vez que se guarda algo en Costos, el precio de venta de cada receta (Precios y Rentabilidad, cuadro 2) pasa al catálogo redondeado a $100 (8.750 → 8.800). Abajo aparece un aviso con lo que cambió. **Traer precios de Costos** hace lo mismo a mano.
 - **Receta nueva en Costos:** aparece en Catálogo **oculta**. Escribile la descripción, subí la foto y tildá **Mostrar en la web**. Sin descripción no deja publicarla.
 - **Renombrar una receta** en Costos no la desvincula. **Quitarla** la saca de la web y queda «Sin receta en Costos».
 - **Sin receta en Costos:** el precio queda fijo. Se puede **vincular** con una receta nueva (la fila nueva se borra y esta toma su receta y su precio) o **quitar del catálogo**.

@@ -1,8 +1,9 @@
 /* =========================================================
    PENITENTIA · Catálogo web
    Lo que ve el público en penitentia.com.ar, manejado desde acá:
-     - Precio: lo pone Costos solo (Precios y Rentabilidad, cuadro 2,
-       redondeado a $100) cada vez que se guarda algo en Costos.
+     - Precio: desde el 03/11/2026 se escribe a mano en cada ficha
+       (PRECIO_DESDE_COSTOS = false). Con true, lo vuelve a poner Costos
+       solo (Precios y Rentabilidad, cuadro 2, redondeado a $100).
      - Receta nueva en Costos → aparece acá oculta; se completa la
        descripción y la foto y se tilda «Mostrar en la web».
      - Nombre, descripción, foto, orden y «Hay stock» se editan acá.
@@ -22,6 +23,9 @@
   const slug = s => clave(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "pizza";
   /* Fotos guardadas como «img/…» son de la web: desde /stock/ se ven con «../» delante */
   const verFoto = f => (!f ? "" : /^(https?:|data:)/.test(f) ? f : "../" + f);
+
+  /* Precio automático desde Costos: suspendido a pedido (el precio de venta lo decidís vos) */
+  const PRECIO_DESDE_COSTOS = false;
 
   let filas = [];
   let cargado = false;
@@ -66,13 +70,13 @@
     for (const r of recetas) {
       const f = lista.find(x => igual(x.receta, r.receta));
       if (f) {
-        if (r.precio !== null && f.precio !== r.precio) { res.precios.push({ nombre: f.nombre, antes: f.precio, despues: r.precio }); await cambiar(f, { precio: r.precio }); }
+        if (PRECIO_DESDE_COSTOS && r.precio !== null && f.precio !== r.precio) { res.precios.push({ nombre: f.nombre, antes: f.precio, despues: r.precio }); await cambiar(f, { precio: r.precio }); }
         continue;
       }
       let id = slug(r.receta), n = 2;
       while (lista.some(x => x.id === id)) id = slug(r.receta) + "-" + n++;
       const orden = Math.max(0, ...lista.map(x => x.orden || 0)) + 1;
-      lista.push(await D.catalogo.crear({ id, receta: r.receta, nombre: r.receta, descripcion: "", precio: r.precio, foto: "", mostrar: false, disponible: true, orden }));
+      lista.push(await D.catalogo.crear({ id, receta: r.receta, nombre: r.receta, descripcion: "", precio: PRECIO_DESDE_COSTOS ? r.precio : null, foto: "", mostrar: false, disponible: true, orden }));
       res.nuevas.push(r.receta);
     }
 
@@ -148,10 +152,15 @@
             <textarea data-campo="descripcion" rows="2" maxlength="160" placeholder="Ej. Salsa de tomate, mozzarella y …">${esc(f.descripcion)}</textarea>
           </label>
           <div class="cat__pie">
+            ${PRECIO_DESDE_COSTOS ? `
             <p class="cat__precio">
               <b>${f.precio ? pesos(f.precio) : "Consultá el precio"}</b>
               <span>${f.receta ? `De Costos · ${esc(f.receta)}` : "Sin receta en Costos"}</span>
-            </p>
+            </p>` : `
+            <label class="campo campo--linea cat__precio cat__precio--mano">
+              <span>Precio en la web $</span>
+              <input data-campo="precio" inputmode="numeric" value="${f.precio ? f.precio.toLocaleString("es-AR") : ""}" placeholder="Sin precio" aria-label="Precio de ${esc(f.nombre)} en la web">
+            </label>`}
             <div class="cat__orden" role="group" aria-label="Orden en la web">
               <button type="button" class="btn-icono" data-mover="-1" aria-label="Subir ${esc(f.nombre)}"${i === 0 ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
               <button type="button" class="btn-icono" data-mover="1" aria-label="Bajar ${esc(f.nombre)}"${i === filas.length - 1 ? " disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -182,6 +191,14 @@
     const el = e.target, f = filaDe(el), campo = el.dataset.campo;
     if (el.matches("[data-vincular]")) return vincular(f, el.value);
     if (!f || !campo) return;
+    if (campo === "precio") {
+      /* 13000, 13.000 o $ 13.000; vacío = «Consultá el precio» */
+      const t = el.value.replace(/[$\s.]/g, "").replace(",", ".");
+      const n = t === "" ? null : Math.round(Number(t));
+      if (n !== null && (!Number.isFinite(n) || n <= 0)) { avisar("Escribí el precio en pesos, por ejemplo 13000."); el.value = f.precio ? f.precio.toLocaleString("es-AR") : ""; return; }
+      if (n === f.precio) { el.value = n ? n.toLocaleString("es-AR") : ""; return; }
+      return guardarCampos(f, { precio: n }, n ? `${f.nombre}: ${pesos(n)} en la web.` : `${f.nombre}: la web muestra «Consultá el precio».`);
+    }
     if (campo === "nombre" || campo === "descripcion") {
       const v = el.value.trim().replace(/\s+/g, " ");
       if (campo === "nombre" && !v) { avisar("El nombre no puede quedar vacío."); el.value = f.nombre; return; }
@@ -272,6 +289,10 @@
   document.addEventListener("stock:vista", e => { if (e.detail === "catalogo") cargar(); });
   document.addEventListener("stock:salir", () => { filas = []; cargado = false; $("#cat-lista").innerHTML = ""; });
 
-  window.CATALOGO = { sincronizar, resumen };
+  window.CATALOGO = { sincronizar, resumen, precioAutomatico: PRECIO_DESDE_COSTOS };
+  if (!PRECIO_DESDE_COSTOS) {
+    $("#cat-traer").textContent = "Traer recetas nuevas de Costos";
+    $("#cat-ayuda").innerHTML = "El <b>precio</b> de cada pizza se escribe acá y es el que se ve en la web (y con el que se registra cada venta). Costos ya no lo cambia. Una receta nueva de Costos aparece acá oculta y sin precio: escribile el precio y la descripción, subí la foto y tildá <b>Mostrar en la web</b>.";
+  }
   if (!$("#catalogo").hidden) cargar();   // la sesión pudo abrir en Catálogo antes de que cargara este archivo
 })();

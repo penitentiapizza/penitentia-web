@@ -392,7 +392,7 @@
     try {
       const res = await window.CATALOGO.sincronizar(recetas, cambios);
       const txt = window.CATALOGO.resumen(res);
-      if (txt || manual) avisar(txt || "Los precios de la web ya estaban al día.");
+      if (txt || manual) avisar(txt || (window.CATALOGO.precioAutomatico ? "Los precios de la web ya estaban al día." : "No hay recetas nuevas en Costos."));
     } catch (e) {
       renombres.unshift(...cambios.renombres); quitadas.unshift(...cambios.quitadas);   // se reintentan en el próximo guardado
       if (manual) throw new Error(e.faltaTabla ? "Falta crear la tabla del catálogo en Supabase (ver supabase.sql)." : "No se pudieron pasar los precios a la web: " + e.message);
