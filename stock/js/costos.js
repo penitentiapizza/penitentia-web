@@ -538,7 +538,7 @@
     const ultimo = s.items.at(-1);
     insertarFila(h, ultimo);
     copiarFila(h, ultimo + 1, ultimo, { 0: nombre, 1: unidad, 2: precio });
-    return { hoja: h.nombre, fila: ultimo, aviso: `«${nombre}» agregado a ${seccion}. Ya lo podés usar en las recetas.` };
+    return { hoja: h.nombre, fila: ultimo, nombre, aviso: `«${nombre}» agregado a ${seccion}. Ya lo podés usar en las recetas.` };
   }
   function quitarInsumo({ nombre }) {
     const h = hojaModelo("Precios Insumos");
@@ -561,7 +561,7 @@
       if (!cel.f && typeof cel.v === "string" && igual(cel.v, i.nombre) && (DONDE[h.nombre] || []).includes(c)) { poner(h, r, c, nuevo); n++; }
       else if (cel.f && cel.f.includes(`"${i.nombre}"`)) { poner(h, r, c, "=" + normalizar(cel.f.split(`"${i.nombre}"`).join(`"${nuevo}"`))); n++; }
     }
-    return { hoja: "Precios Insumos", fila: i.fila, aviso: `«${i.nombre}» ahora se llama «${nuevo}» (${n} lugar${n === 1 ? "" : "es"}).` };
+    return { hoja: "Precios Insumos", fila: i.fila, nombre: nuevo, aviso: `«${i.nombre}» ahora se llama «${nuevo}» (${n} lugar${n === 1 ? "" : "es"}).` };
   }
 
   /* ----- Recetas ----- */
@@ -714,6 +714,46 @@
   /* «Muzzarella» → «Mozzarella» en todo el libro (pedido el 03/11/2026). Se cambian los textos y lo que está
      entre comillas en las fórmulas, así los BUSCARV siguen encontrando el mismo insumo. Si cambia el nombre
      de una receta, el catálogo web lo sigue. Devuelve cuántas celdas cambió (0 si ya estaba). */
+  /* ----- Orden alfabético dentro de cada categoría (Precios Insumos) y de cada tabla de consumo (Insumos) -----
+     Los renglones se mueven con el motor, así cualquier fórmula que apunte a un insumo lo sigue.
+     El rayado (blanco / gris muy claro) queda por posición; los demás colores viajan con su insumo. */
+  const RAYADO = new Set([undefined, "FFFFFF", "FAFBFC"]);
+  function ordenarBloque(h, filas, c0, c1) {
+    if (filas.length < 2) return false;
+    const orden = filas.map(r => ({ r, n: String(texto(h, r, c0) ?? "") }))
+      .sort((a, b) => a.n.localeCompare(b.n, "es", { sensitivity: "base", numeric: true }));
+    if (orden.every((x, i) => x.r === filas[i])) return false;
+    const id = sid(h);
+    const cols = Array.from({ length: c1 - c0 + 1 }, (_, k) => c0 + k);
+    const estilo = r => Object.fromEntries(cols.map(c => [c, h.celdas[dir(r, c)]]));
+    const deItem = Object.fromEntries(filas.map(r => [r, estilo(r)]));
+    const tmp = Math.max(h.filas, hf.getSheetDimensions(id).height) + 5;
+    const mover = (desde, hacia) => hf.moveCells({ start: { sheet: id, row: desde, col: c0 }, end: { sheet: id, row: desde, col: c1 } }, { sheet: id, row: hacia, col: c0 });
+    orden.forEach((x, i) => mover(x.r, tmp + i));          // primero todos afuera, en el orden nuevo
+    orden.forEach((x, i) => mover(tmp + i, filas[i]));     // y de vuelta a los mismos renglones
+    const posicion = Object.fromEntries(filas.map(r => [r, deItem[r]]));
+    orden.forEach((x, i) => {
+      const r = filas[i];
+      for (const c of cols) {
+        const suyo = deItem[x.r][c], lugar = posicion[r][c];
+        const color = RAYADO.has(suyo?.c) && RAYADO.has(lugar?.c) ? lugar?.c : suyo?.c;
+        tomarDelMotor(h, r, c, { ...(suyo?.z ? { z: suyo.z } : {}), ...(color ? { c: color } : {}) });
+      }
+    });
+    return true;
+  }
+  function ordenarInsumos() {
+    let n = 0;
+    try {
+      const P = hojaModelo("Precios Insumos");
+      if (P) for (const sec of seccionesInsumos(P)) if (ordenarBloque(P, sec.items, 0, P.cols - 1)) n++;
+      const I = hojaModelo("Insumos");
+      if (I) for (const t of tablasConsumo(I)) if (ordenarBloque(I, t.items, t.c0, t.c1)) n++;
+      if (n) sincronizarFormulas();
+    } catch (e) { console.warn("No se pudieron ordenar los insumos:", e.message); }
+    return n;
+  }
+
   function corregirMozzarella() {
     const cambiar = s => s.replace(/Muzzarella/g, "Mozzarella").replace(/MUZZARELLA/g, "MOZZARELLA").replace(/muzzarella/g, "mozzarella");
     let n = 0;
@@ -878,7 +918,7 @@
       correrCeldas(h, o.c0, o.c1, ultimo + 1, o.total + 1, -1);
     }
     copiarFila(h, ultimo + 1, ultimo, { [t.c0]: insumo.nombre, [t.c0 + 1]: insumo.unidad, [t.c0 + 3]: cantidad }, t.c0, t.c1);
-    return { hoja: h.nombre, fila: ultimo, aviso: `${insumo.nombre} agregado al consumo de ${tabla.toLowerCase()}. Costos fijos recalculados.` };
+    return { hoja: h.nombre, fila: ultimo, nombre: insumo.nombre, aviso: `${insumo.nombre} agregado al consumo de ${tabla.toLowerCase()}. Costos fijos recalculados.` };
   }
   function quitarConsumo({ tabla, fila }) {
     const h = hojaModelo("Insumos");
@@ -1024,6 +1064,11 @@
     let res;
     try { res = acc[2](f); } catch (err) { avisar(err.message); return; }
     if (!res) return;   // cancelado
+    if (ordenarInsumos() && res.nombre) {
+      const H = hojaModelo(res.hoja);
+      const r = Object.entries(H.celdas).find(([, cel]) => !cel.f && typeof cel.v === "string" && igual(cel.v, res.nombre));
+      if (r) res.fila = XLSX.utils.decode_cell(r[0]).r;
+    }
     sincronizarFormulas();
     fotosOtras = null; cambiosEnOtrasHojas("");
     formularioDe = null;
@@ -1072,10 +1117,11 @@
         $("#costos-falta").hidden = true;
         const conMozzarella = modelo && corregirMozzarella();
         if (modelo) armarMotor();
+        const ordenado = modelo && ordenarInsumos();
         const conPrefermento = modelo && agregarPrefermento();
         mostrarLibro();
         estado(modelo ? "Guardado" : "", modelo ? "ok" : "");
-        if (conPrefermento || conMozzarella) programarGuardado();
+        if (conPrefermento || conMozzarella || ordenado) programarGuardado();
         if (conPrefermento) avisar("Agregué el cuadro Prefermento en Recetas, debajo de PRODUCCIÓN del bollo.");
         else if (conMozzarella) avisar(`Cambié «Muzzarella» por «Mozzarella» en ${conMozzarella} celda${conMozzarella > 1 ? "s" : ""} de Costos.`);
         publicarPrecios();   // por si Costos cambió desde otro equipo o el catálogo es nuevo
@@ -1103,6 +1149,7 @@
       modelo = nuevo;
       corregirMozzarella();
       armarMotor();
+      ordenarInsumos();
       agregarPrefermento();
       mostrarLibro();
       await guardarYa();

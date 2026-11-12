@@ -100,3 +100,7 @@ Cuadro justo debajo de **PRODUCCIÓN (¿cuánto necesito?)** del bollo (RECETA B
 - **Ventas:** por mes o todo, con totales por variedad y por cliente (tocá un cliente para ver sólo lo suyo). En cada venta se puede **cambiar el cliente** (lápiz) o **Anular** (la pizza vuelve al freezer). «Descargar para Excel» baja lo que se ve.
 - **Prepizzas:** las ventas también tienen Cliente.
 - **Primera vez:** pegá la parte «CLIENTE» de `supabase.sql` en Supabase → SQL Editor → Run. Sin eso se vende igual, pero sin guardar el cliente (avisa).
+
+## Orden de los insumos (12/11/2026)
+
+En **Precios Insumos** cada categoría (Ingredientes, Limpieza, Descartables) y en **Insumos** cada tabla de consumo (Limpieza, Descartables) quedan en orden alfabético. Se ordena solo al abrir Costos y cada vez que agregás o renombrás un insumo. Las fórmulas siguen a cada insumo, así que los costos no cambian.
