@@ -90,3 +90,13 @@ Es lo que ve el público en penitentia.com.ar. La web lo lee de Supabase (tabla 
 ## Prefermento (Costos → Recetas)
 
 Cuadro justo debajo de **PRODUCCIÓN (¿cuánto necesito?)** del bollo (RECETA BASE Y PROPORCIONES queda más abajo), vinculado a sus totales: harina y agua en partes iguales (100 % del agua total) y levadura 4 g por kg de esa harina. La columna **Después** dice lo que falta agregar al amasar: el resto de la harina y de la levadura, y la sal. Las proporciones (100 %, 100 %, 4 g/kg) son celdas amarillas. La página lo agrega sola la primera vez que se abre Costos.
+
+## Organización (desde el 12/11/2026)
+
+- **Día a día:** Inicio, Producir, Stock y Ventas. **Gestión:** Prepizzas, Costos y Catálogo (en pantallas medianas y en el celular están dentro de **Más**).
+- **Inicio:** lo primero al entrar. El freezer por variedad (cuántas hay, la primera en vencer y lo vendido en el mes; tocá una variedad para verla en Stock), **Para revisar** (vencidas, por vencer en 14 días, en revisión) y las ventas del mes con las últimas cinco.
+- **Vender** (botón blanco de la barra, siempre a mano): abre la venta en curso. Se suman pizzas escaneando o escribiendo el código, con «Vendida» en cada pizza del Stock o eligiendo varias. Muestra el precio de la web de cada una y el total; se confirma con **Cliente** (sugiere los que ya compraron) y **Canal**. En la compu es una columna a la derecha; en el celular, una hoja que sube. Se puede cerrar y seguir: la venta queda armada.
+- **Stock:** el freezer físico (En freezer, En revisión, De baja, Todas). Lo vendido está en Ventas.
+- **Ventas:** por mes o todo, con totales por variedad y por cliente (tocá un cliente para ver sólo lo suyo). En cada venta se puede **cambiar el cliente** (lápiz) o **Anular** (la pizza vuelve al freezer). «Descargar para Excel» baja lo que se ve.
+- **Prepizzas:** las ventas también tienen Cliente.
+- **Primera vez:** pegá la parte «CLIENTE» de `supabase.sql` en Supabase → SQL Editor → Run. Sin eso se vende igual, pero sin guardar el cliente (avisa).

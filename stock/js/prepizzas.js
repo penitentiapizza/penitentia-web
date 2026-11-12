@@ -54,7 +54,7 @@
     const lista = enPeriodo();
     $("#pp-filas").innerHTML = lista.map(m => {
       const t = total(m);
-      const detalle = [m.canal, m.nota].filter(Boolean).map(esc).join(" · ");
+      const detalle = [m.cliente, m.canal, m.nota].filter(Boolean).map(esc).join(" · ");
       return `<tr data-id="${m.id}">
         <td class="col-fecha">${fechaAR(m.fecha)}</td>
         <td><span class="mov mov--${m.tipo}">${TIPOS[m.tipo]}</span></td>
@@ -114,14 +114,25 @@
       canal: tipo === "venta" ? ($("#pp-canal").value || null) : null,
       nota: $("#pp-nota").value.trim() || null,
     };
+    const cliente = tipo === "venta" ? $("#pp-cliente").value.trim().replace(/\s+/g, " ") : "";
+    if (cliente) m.cliente = cliente;
     const btn = $("#pp-guardar");
     btn.disabled = true; btn.classList.add("cargando");
     try {
-      const nuevo = await D.prepizzas.crear(m);
+      let nuevo;
+      try { nuevo = await D.prepizzas.crear(m); }
+      catch (err) {
+        if (!m.cliente || !/cliente/.test(err.message)) throw err;
+        /* La base todavía no tiene la columna (falta el SQL «CLIENTE»): el cliente va a la nota */
+        const { cliente: c, ...resto } = m;
+        resto.nota = [c, resto.nota].filter(Boolean).join(" · ");
+        nuevo = await D.prepizzas.crear(resto);
+      }
       movimientos = [nuevo, ...movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha) || b.creado_el.localeCompare(a.creado_el));
       if (periodo && !fecha.startsWith(periodo)) periodo = fecha.slice(0, 7);
       pintar();
-      $("#pp-cantidad").value = 1; $("#pp-nota").value = "";
+      $("#pp-cantidad").value = 1; $("#pp-nota").value = ""; $("#pp-cliente").value = "";
+      window.STOCK.sumarClientes(movimientos.map(x => x.cliente));
       pintarTotal();
       avisar(`${TIPOS[tipo]}: ${numero.format(cantidad)} prepizza${cantidad > 1 ? "s" : ""} el ${fechaAR(fecha)}`);
     } catch (err) {
@@ -151,8 +162,8 @@
     if (!lista.length) return avisar("No hay movimientos para descargar.");
     const dec = n => (n == null ? "" : String(n).replace(".", ","));
     const celda = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const filas = [["Fecha", "Movimiento", "Cantidad", "Precio por unidad", "Total", "Canal", "Nota"]]
-      .concat(lista.map(m => [fechaAR(m.fecha), TIPOS[m.tipo], m.tipo === "produccion" ? m.cantidad : -m.cantidad, dec(m.precio_unitario), dec(total(m)), m.canal, m.nota]));
+    const filas = [["Fecha", "Movimiento", "Cantidad", "Precio por unidad", "Total", "Cliente", "Canal", "Nota"]]
+      .concat(lista.map(m => [fechaAR(m.fecha), TIPOS[m.tipo], m.tipo === "produccion" ? m.cantidad : -m.cantidad, dec(m.precio_unitario), dec(total(m)), m.cliente, m.canal, m.nota]));
     const csv = "﻿" + filas.map(f => f.map(celda).join(";")).join("\r\n");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -168,6 +179,7 @@
     try {
       movimientos = await D.prepizzas.listar();
       $("#pp-falta").hidden = true;
+      window.STOCK.sumarClientes(movimientos.map(x => x.cliente));
     } catch (err) {
       movimientos = [];
       $("#pp-falta").hidden = !err.faltaTabla;

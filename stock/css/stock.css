@@ -170,11 +170,32 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); cur
 .chip-prueba { white-space: nowrap; padding: 5px 11px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px var(--blanco-60); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .barra .btn-texto { color: var(--blanco); }
 
-/* Con cinco secciones, en pantallas medianas las pestañas van sin ícono para que entre todo */
-@media (max-width: 1080px) {
-  .pestana { padding: 0 12px; }
-  .pestana svg { display: none; }
-  .chip-prueba { display: none; }
+/* Dos grupos: el día a día (Inicio, Producir, Stock, Ventas) y la gestión (Prepizzas, Costos, Catálogo).
+   En la barra de arriba las pestañas van sin ícono; la gestión pasa a «Más» cuando no entra. */
+.pestana svg { display: none; }
+.pestanas__sep { align-self: center; width: 1.5px; height: 22px; margin: 0 8px; background: var(--blanco-20); border-radius: 2px; }
+.pestana--mas { display: none; }
+.pestana--mas[data-activa], .pestana--mas[aria-expanded="true"] { color: var(--blanco); }
+.pestana--mas[data-activa]::after { transform: scaleX(1); }
+
+.btn-vender {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px 0 13px;
+  border: 0; border-radius: 999px; background: var(--blanco); color: var(--azul); font-weight: 700;
+  transition: background-color 180ms ease, transform 100ms var(--ease-out);
+}
+.btn-vender svg { width: 19px; height: 19px; }
+.btn-vender:active { transform: scale(.96); }
+@media (hover: hover) { .btn-vender:hover { background: var(--azul-08); } }
+.btn-vender__num { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 99px; background: var(--azul); color: var(--blanco); font-size: 12.5px; display: inline-grid; place-items: center; }
+.btn-vender__num[hidden] { display: none; }
+.barra .btn-vender:focus-visible { outline-color: var(--blanco); }
+
+.pestanas .pestana { padding: 0 11px; }
+.barra__in { gap: 18px; }
+@media (max-width: 1240px) { .chip-prueba { display: none; } }
+@media (max-width: 1140px) {
+  .pestana--gestion, .pestanas__sep { display: none; }
+  .pestana--mas { display: inline-flex; }
 }
 @media (max-width: 900px) {
   .pestana { padding: 0 9px; }
@@ -196,7 +217,7 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); cur
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: var(--azul);
     box-shadow: 0 -8px 24px -12px rgba(21, 34, 58, .5);
   }
-  .pestana { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 0 2px !important; font-size: 12px !important; }
+  .pestana, .pestana--mas { flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 0 2px !important; font-size: 12px !important; }
   .pestana svg { display: block !important; width: 22px; height: 22px; }
   .pestana::after { top: -6px; bottom: auto; left: 30% !important; right: 30% !important; border-radius: 0 0 3px 3px; }
   .pestana__num { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 20px; height: 18px; font-size: 11px; padding: 0 5px; }
@@ -204,6 +225,8 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--azul); cur
   .acciones { bottom: calc(76px + env(safe-area-inset-bottom)); }
   .barra__logo { display: block !important; width: 84px !important; }
   .barra__nombre { display: inline; }
+  .btn-vender { margin-left: auto; }
+  .barra__usuario { margin-left: 0; }
 }
 
 /* Celulares angostos: que «Salir» siempre entre en la barra */
@@ -326,7 +349,7 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
 .estado--vendida::before { background: none; box-shadow: inset 0 0 0 2px var(--azul-55); }
 .estado--baja { color: var(--azul-55); font-weight: 400; text-decoration: line-through; }
 .estado--baja::before { background: var(--azul-12); }
-.estado--revision { padding: 4px 10px 4px 8px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px var(--azul); background: repeating-linear-gradient(-45deg, var(--azul-06) 0 6px, var(--blanco) 6px 12px); }
+.estado--revision { padding: 3px 9px 3px 7px; border-radius: 99px; border: 1.5px dashed var(--azul); background: var(--azul-06); }
 .estado--revision::before { background: none; box-shadow: inset 0 0 0 2px var(--azul); }
 .segmentos__num { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 4px; padding: 0 6px; border-radius: 99px; background: var(--azul); color: var(--blanco); font-size: 12px; }
 .segmentos button[aria-pressed="true"] .segmentos__num { background: var(--blanco); color: var(--azul); }
@@ -370,6 +393,194 @@ main { padding: clamp(28px, 4vw, 52px) 0 140px; }
   .tabla .col-estado { grid-column: 3; grid-row: 1; justify-self: end; }
   .tabla .col-acc { grid-column: 3; grid-row: 2 / 5; align-self: end; }
   .sr-movil { display: inline; }
+}
+
+/* ---------- Comunes ---------- */
+.tenue { color: var(--azul-55); }
+.cabeza__nota { font-size: var(--t-chico); color: var(--azul-70); padding-bottom: 6px; }
+.bloque h3 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.bloque__cab { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.bloque > h3 { margin-bottom: 12px; }
+.fila-link {
+  border: 0; background: none; padding: 0; font-weight: 700; color: var(--azul); text-align: left;
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; text-decoration-thickness: 1.5px;
+  transition: text-decoration-color 160ms ease;
+}
+.fila-link:hover { text-decoration-color: currentColor; }
+.btn-icono--chico { width: 30px; height: 30px; }
+.btn-icono--chico svg { width: 16px; height: 16px; }
+.tabla .num { text-align: right; white-space: nowrap; }
+
+/* ---------- Menú «Más» ---------- */
+.mas {
+  position: fixed; z-index: 35; width: 300px; padding: 8px; border-radius: 20px;
+  background: var(--blanco); color: var(--azul);
+  box-shadow: 0 22px 48px -14px rgba(21, 34, 58, .45), 0 3px 10px rgba(21, 34, 58, .14);
+  animation: aparecer 200ms var(--ease-out);
+}
+.mas__item {
+  width: 100%; display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 14px;
+  padding: 12px 14px; border: 0; border-radius: 14px; background: none; text-align: left; transition: background-color 150ms ease;
+}
+.mas__item svg { width: 22px; height: 22px; }
+.mas__item b { display: block; font-size: 16px; }
+.mas__item small { display: block; font-size: 13px; color: var(--azul-70); }
+.mas__item:hover { background: var(--azul-06); }
+.mas__item[aria-current] { background: var(--azul-08); }
+@keyframes aparecer { from { opacity: 0; transform: translateY(-6px); } }
+@media (max-width: 640px) {
+  .mas { left: 12px !important; right: 12px; bottom: calc(76px + env(safe-area-inset-bottom)); top: auto !important; width: auto; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } }
+}
+
+/* ---------- Venta en curso ----------
+   Compu: columna a la derecha, la página se corre para que no tape nada.
+   Celular: hoja que sube desde abajo, sobre la barra de secciones. */
+.venta {
+  position: fixed; z-index: 26; top: calc(var(--barra-alto) + env(safe-area-inset-top)); right: 0; bottom: 0; width: 380px;
+  display: flex; flex-direction: column; background: var(--blanco);
+  box-shadow: -1.5px 0 0 var(--azul-12), -18px 0 40px -28px rgba(21, 34, 58, .45);
+  animation: entrar-lado 260ms var(--ease-hoja);
+}
+@keyframes entrar-lado { from { transform: translateX(24px); opacity: 0; } }
+@media (min-width: 901px) {
+  body.con-venta main { padding-right: 380px; }
+  body.con-venta .acciones { left: calc((100% - 380px) / 2); }
+}
+.venta__cab { display: flex; align-items: center; gap: 12px; padding: 16px 12px 14px 22px; border-bottom: 1.5px solid var(--azul-12); }
+.venta__cab h2 { font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.venta__cuenta { font-size: var(--t-chico); font-weight: 700; color: var(--azul-70); }
+.venta__cerrar { margin-left: auto; }
+.venta__codigo { display: flex; gap: 8px; padding: 14px 16px 6px 22px; }
+.venta__codigo input {
+  flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border-radius: var(--radio); border: 1.5px solid var(--azul-12);
+  text-transform: uppercase; letter-spacing: .04em; font-weight: 700; transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+.venta__codigo input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--azul-55); }
+.venta__codigo input:focus { outline: none; border-color: var(--azul); box-shadow: 0 0 0 3px var(--azul-12); }
+.venta__codigo .btn { min-height: 46px; padding: 0 18px; }
+.venta__items { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 6px 12px 6px 22px; }
+.venta__items li {
+  display: grid; grid-template-columns: 1fr auto auto; grid-template-areas: "nombre precio quitar" "cod precio quitar";
+  align-items: center; column-gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--azul-12);
+  animation: aparecer 180ms var(--ease-out);
+}
+.venta__nombre { grid-area: nombre; font-weight: 700; }
+.venta__cod { grid-area: cod; font-size: 13px; color: var(--azul-70); letter-spacing: .02em; }
+.venta__precio { grid-area: precio; font-weight: 700; white-space: nowrap; }
+.venta__items .btn-icono { grid-area: quitar; margin: 0; }
+.venta__vacia { flex: 1 1 auto; padding: 18px 22px; font-size: var(--t-chico); color: var(--azul-70); }
+.venta__datos { display: grid; gap: 12px; padding: 14px 16px 6px 22px; border-top: 1.5px solid var(--azul-12); }
+.venta__datos input, .venta__datos select { width: 100%; min-width: 0; }
+.venta__pie { display: flex; align-items: center; gap: 12px; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)) 22px; }
+.venta__total { margin-right: auto; display: flex; flex-direction: column; line-height: 1.15; }
+.venta__total span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--azul-70); }
+.venta__total b { font-size: 24px; letter-spacing: -.01em; }
+.venta__pie .btn-texto[hidden] { display: none; }
+@media (max-width: 900px) {
+  .venta {
+    top: auto; left: 0; width: auto; max-height: min(78svh, 640px); border-radius: 26px 26px 0 0;
+    box-shadow: 0 -18px 44px -18px rgba(21, 34, 58, .5), 0 0 0 1.5px var(--azul-12);
+    animation: subir-hoja 280ms var(--ease-hoja);
+  }
+  body.con-venta .acciones { display: none; }
+  @keyframes subir-hoja { from { transform: translateY(40px); opacity: 0; } }
+}
+@media (max-width: 640px) {
+  .venta { bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100svh - var(--barra-alto) - 84px); }
+  .venta__pie { padding-bottom: 16px; }
+}
+
+/* ---------- Inicio ---------- */
+.inicio__fecha { padding-bottom: 10px; font-size: var(--t-chico); font-weight: 700; color: var(--azul-70); }
+.inicio { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px 44px; align-items: start; }
+.inicio__lado { display: flex; flex-direction: column; gap: 30px; }
+
+.tabla--freezer td { padding: 12px 14px; }
+.tabla--freezer th { padding: 12px 14px; }
+.tabla--freezer th:first-child, .tabla--freezer td:first-child { padding-left: 20px; }
+.tabla--freezer .fila__num { font-size: 18px; font-weight: 700; }
+.tabla--freezer .fila--cero .fila-link, .tabla--freezer .fila--cero .fila__num { color: var(--azul-55); }
+.tabla--freezer tfoot td { border-top: 2px solid var(--azul); font-weight: 700; background: var(--azul-06); }
+.tabla--freezer .estado { font-size: 12.5px; }
+
+.vender-rapido { display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: var(--radio-ficha); background: var(--azul-06); }
+.vender-rapido h3 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.vender-rapido input { width: 100%; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; }
+.vender-rapido input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.vender-rapido .btn { min-height: 48px; }
+
+.alertas { display: flex; flex-direction: column; gap: 6px; }
+.alerta {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 12px 12px 16px;
+  border: 0; border-radius: var(--radio); background: var(--azul-06); color: var(--azul); text-align: left;
+  transition: background-color 150ms ease;
+}
+.alerta:hover { background: var(--azul-08); }
+.alerta svg { width: 18px; height: 18px; flex: none; }
+.alertas__ok { font-size: var(--t-chico); color: var(--azul-70); }
+
+.inicio__total { margin-bottom: 8px; font-size: 15px; }
+.inicio__total b { font-size: 19px; }
+.ultimas li { display: grid; grid-template-columns: 46px 1fr auto; gap: 10px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--azul-12); font-size: var(--t-chico); }
+.ultimas__fecha { color: var(--azul-70); font-variant-numeric: tabular-nums; }
+.ultimas__que { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ultimas__precio { font-weight: 700; white-space: nowrap; }
+
+@media (max-width: 980px) {
+  .inicio { grid-template-columns: minmax(0, 1fr); }
+  .inicio__lado { order: -1; }
+}
+
+/* ---------- Ventas ---------- */
+.ventas__filtros { display: flex; align-items: flex-end; gap: 12px 16px; flex-wrap: wrap; }
+.ventas__filtros .campo input { width: 200px; }
+#ventas-falta { margin-bottom: 18px; }
+.ventas__total { margin-bottom: 22px; font-size: 16px; }
+.ventas__total b { font-size: 20px; }
+.ventas__total:empty { display: none; }
+.ventas__cortes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; margin-bottom: 30px; }
+.tabla--corte td { padding: 8px 10px; }
+.tabla--corte td:first-child { padding-left: 0; }
+.tabla--corte tr:first-child td { border-top: 0; }
+.tabla--corte tbody tr:hover { background: none; }
+.tabla--corte tr.elegida td { background: var(--azul-08); }
+.tabla--ventas .col-fecha { white-space: nowrap; }
+.tabla--ventas .col-cliente { white-space: nowrap; }
+.tabla--ventas .col-cliente .btn-icono { margin-left: 2px; opacity: .55; transition: opacity 150ms ease; }
+.tabla--ventas tr:hover .col-cliente .btn-icono, .tabla--ventas .col-cliente .btn-icono:focus-visible { opacity: 1; }
+.ventas__editar { width: 100%; min-width: 150px; min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--azul); box-shadow: 0 0 0 3px var(--azul-12); }
+.ventas__editar:focus { outline: none; }
+@media (max-width: 760px) {
+  .ventas__cortes { grid-template-columns: 1fr; }
+  .ventas__filtros { width: 100%; }
+  .ventas__filtros .campo { flex: 1; }
+  .ventas__filtros .campo input { width: 100%; }
+}
+
+/* Tablas que siguen siendo tablas en el celular (el resto pasa a lista) */
+@media (max-width: 760px) {
+  .tabla.tabla--freezer, .tabla.tabla--corte { display: table; }
+  .tabla--freezer thead { display: table-header-group; }
+  .tabla--freezer tbody, .tabla--corte tbody { display: table-row-group; }
+  .tabla--freezer tfoot { display: table-footer-group; }
+  .tabla--freezer tr, .tabla--corte tr { display: table-row; padding: 0; }
+  .tabla--freezer td, .tabla--freezer th { display: table-cell; padding: 11px 10px !important; border-top: 1px solid var(--azul-12); }
+  .tabla--freezer th { border-top: 0; font-size: 11px; }
+  .tabla--freezer th:first-child, .tabla--freezer td:first-child { padding-left: 14px !important; }
+  .tabla--freezer tfoot td { border-top: 2px solid var(--azul); }
+  .tabla--freezer th:nth-child(4), .tabla--freezer td:nth-child(4) { display: none; }
+  .tabla--corte td { display: table-cell; padding: 8px 10px !important; border-top: 1px solid var(--azul-12); }
+  .tabla--corte td:first-child { padding-left: 0 !important; }
+  .tabla--corte tr:first-child td { border-top: 0; }
+  /* Ventas: cada venta es una ficha de tres renglones */
+  .tabla--ventas tr { grid-template-columns: 1fr auto; grid-template-areas: "pizza precio" "cliente acc" "fecha acc"; gap: 3px 12px; }
+  .tabla--ventas .col-pizza { grid-area: pizza; }
+  .tabla--ventas .col-precio { grid-area: precio; font-weight: 700; }
+  .tabla--ventas .col-cliente { grid-area: cliente; }
+  .tabla--ventas .col-fecha { grid-area: fecha; font-size: 13px; color: var(--azul-70); }
+  .tabla--ventas .col-canal { display: none !important; }
+  .tabla--ventas .col-acc { grid-area: acc; align-self: center; }
 }
 
 /* ---------- Prepizzas ---------- */

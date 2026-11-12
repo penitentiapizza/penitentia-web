@@ -224,3 +224,12 @@ alter table public.pizzas add column if not exists precio_venta int check (preci
 alter table public.pizzas drop constraint if exists pizzas_estado_check;
 alter table public.pizzas add constraint pizzas_estado_check
   check (estado in ('stock', 'vendida', 'baja', 'revision'));
+
+
+-- =========================================================
+-- CLIENTE (agregado el 12/11/2026)
+-- A quién se vendió cada pizza y cada venta de prepizzas.
+-- =========================================================
+
+alter table public.pizzas add column if not exists cliente text;
+alter table public.prepizzas_movimientos add column if not exists cliente text;

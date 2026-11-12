@@ -29,6 +29,8 @@
     const r = new Date(Date.UTC(a, m - 1 + meses, Math.min(d, ultimo)));
     return r.toISOString().slice(0, 10);
   }
+  /* Fecha local (AAAA-MM-DD) de un momento guardado en UTC, para agrupar ventas por día y mes */
+  const fechaLocal = ts => { const d = new Date(ts); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const diasHasta = iso => Math.round((Date.parse(iso) - Date.parse(hoyISO())) / 864e5);
   const prefijo = (iso, v) => iso.slice(2).replaceAll("-", "") + "-" + porId[v].codigo;
 
@@ -164,7 +166,7 @@
      STOCK
      ========================================================= */
   function estadoDe(p) {
-    if (p.estado === "vendida") return { clase: "vendida", texto: "Vendida" + (p.vendida_el ? " · " + fechaAR(p.vendida_el.slice(0, 10)) : "") + (p.canal ? " · " + p.canal : "") + (p.precio_venta ? " · " + pesos(p.precio_venta) : "") };
+    if (p.estado === "vendida") return { clase: "vendida", texto: "Vendida" + (p.vendida_el ? " · " + fechaAR(fechaLocal(p.vendida_el)) : "") + (p.cliente ? " · " + p.cliente : "") };
     if (p.estado === "baja") return { clase: "baja", texto: "De baja" };
     if (p.estado === "revision") return { clase: "revision", texto: "En revisión" };
     const d = diasHasta(p.vencimiento);
@@ -283,22 +285,27 @@
     }));
   }
 
-  /* Guarda; si la base todavía no tiene la columna precio_venta (falta el SQL), guarda sin el precio y avisa */
-  let faltaColumnaPrecio = false;
-  async function actualizarConPrecio(ids, campos) {
-    if (!("precio_venta" in campos)) return D.actualizar(ids, campos);
-    try { return await D.actualizar(ids, campos); }
-    catch (e) {
-      if (!/precio_venta/.test(e.message)) throw e;
-      faltaColumnaPrecio = true;
-      const { precio_venta, ...resto } = campos;
-      return D.actualizar(ids, resto);
+  /* Guarda; si la base todavía no tiene alguna columna nueva (falta su SQL), guarda sin ella y lo anota */
+  const columnasFaltantes = new Set();
+  async function actualizarSeguro(ids, campos) {
+    let resto = { ...campos };
+    for (const c of columnasFaltantes) delete resto[c];
+    for (let intento = 0; intento < 3; intento++) {
+      try { return await D.actualizar(ids, resto); }
+      catch (e) {
+        const c = ["precio_venta", "cliente"].find(k => k in resto && new RegExp(k).test(e.message));
+        if (!c) throw e;
+        columnasFaltantes.add(c);
+        delete resto[c];
+      }
     }
+    return D.actualizar(ids, resto);
   }
 
-  async function cambiarEstado(ids, estado, { silencio = false } = {}) {
-    if (!ids.length) return;
-    const antes = pizzas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, estado: p.estado, vendida_el: p.vendida_el, canal: p.canal, precio_venta: p.precio_venta ?? null }));
+  /* opciones de venta: { cliente, canal } */
+  async function cambiarEstado(ids, estado, { silencio = false, cliente = null, canal = null } = {}) {
+    if (!ids.length) return false;
+    const antes = pizzas.filter(p => ids.includes(p.id)).map(p => ({ id: p.id, estado: p.estado, vendida_el: p.vendida_el, canal: p.canal, precio_venta: p.precio_venta ?? null, cliente: p.cliente ?? null }));
     let precios = {}, sinPrecio = false;
     if (estado === "vendida") {
       try { precios = await preciosPublicados(); } catch { sinPrecio = true; }
@@ -307,39 +314,46 @@
       let cambiadas;
       if (estado === "vendida") {
         /* Cada variedad con su precio: se guardan por grupo */
-        const ahora = new Date().toISOString(), canal = $("#canal").value || null;
+        const ahora = new Date().toISOString();
         const grupos = {};
         for (const id of ids) { const v = pizzas.find(p => p.id === id).variedad; (grupos[v] = grupos[v] || []).push(id); }
         cambiadas = [];
         for (const [v, suyas] of Object.entries(grupos)) {
           if (!precios[v]) sinPrecio = true;
-          cambiadas.push(...await actualizarConPrecio(suyas, { estado, vendida_el: ahora, canal, precio_venta: precios[v] ?? null }));
+          cambiadas.push(...await actualizarSeguro(suyas, { estado, vendida_el: ahora, canal: canal || null, cliente: cliente || null, precio_venta: precios[v] ?? null }));
         }
       } else {
-        const conPrecio = pizzas.some(p => ids.includes(p.id) && p.precio_venta != null);
-        cambiadas = await actualizarConPrecio(ids, { estado, vendida_el: null, canal: null, ...(conPrecio ? { precio_venta: null } : {}) });
+        const tenian = k => pizzas.some(p => ids.includes(p.id) && p[k] != null);
+        cambiadas = await actualizarSeguro(ids, { estado, vendida_el: null, canal: null, ...(tenian("precio_venta") ? { precio_venta: null } : {}), ...(tenian("cliente") ? { cliente: null } : {}) });
       }
       const m = Object.fromEntries(cambiadas.map(p => [p.id, p]));
       pizzas = pizzas.map(p => m[p.id] ?? p);
       ids.forEach(id => elegidas.delete(id));
       refrescar();
-      if (silencio) return;
+      if (silencio) return true;
       const que = { vendida: "vendida", stock: "de vuelta en el freezer", baja: "dada de baja", revision: "en revisión" }[estado];
       let texto = ids.length === 1 ? `${m[ids[0]].codigo} ${que}` : `${ids.length} pizzas: ${que.replace("vendida", "vendidas").replace("dada", "dadas")}`;
-      if (estado === "vendida" && ids.length === 1 && m[ids[0]].precio_venta) texto += ` a ${pesos(m[ids[0]].precio_venta)}`;
-      if (estado === "vendida" && faltaColumnaPrecio) texto += " (sin precio: falta el SQL «PRECIO DE VENTA Y REVISIÓN» en Supabase)";
-      else if (estado === "vendida" && sinPrecio) texto += " (sin precio: no lo encontré en el catálogo web)";
+      if (estado === "vendida") {
+        const total = cambiadas.reduce((a, p) => a + (p.precio_venta || 0), 0);
+        if (cliente && !columnasFaltantes.has("cliente")) texto += ` a ${cliente}`;
+        if (total) texto += ` · ${pesos(total)}`;
+        if (columnasFaltantes.size) texto += ` (sin ${[...columnasFaltantes].map(c => (c === "cliente" ? "cliente" : "precio")).join(" ni ")}: falta un SQL en Supabase)`;
+        else if (sinPrecio) texto += " (alguna sin precio: no la encontré en el catálogo web)";
+      }
       avisar(texto, { texto: "Deshacer", fn: () => deshacer(antes) });
+      return true;
     } catch (e) {
-      avisar("No se guardó: " + (/precio_venta|revision|check constraint/i.test(e.message) ? "falta actualizar la base (parte «PRECIO DE VENTA Y REVISIÓN» de supabase.sql)." : e.message));
+      avisar("No se guardó: " + (/revision|check constraint/i.test(e.message) ? "falta actualizar la base (parte «PRECIO DE VENTA Y REVISIÓN» de supabase.sql)." : e.message));
+      return false;
     }
   }
 
   async function deshacer(antes) {
     try {
       for (const a of antes) {
-        const tocaPrecio = a.precio_venta != null || pizzas.find(x => x.id === a.id)?.precio_venta != null;
-        const [p] = await actualizarConPrecio([a.id], { estado: a.estado, vendida_el: a.vendida_el, canal: a.canal, ...(tocaPrecio ? { precio_venta: a.precio_venta } : {}) });
+        const ahora = pizzas.find(x => x.id === a.id) || {};
+        const toca = k => a[k] != null || ahora[k] != null;
+        const [p] = await actualizarSeguro([a.id], { estado: a.estado, vendida_el: a.vendida_el, canal: a.canal, ...(toca("precio_venta") ? { precio_venta: a.precio_venta } : {}), ...(toca("cliente") ? { cliente: a.cliente } : {}) });
         pizzas = pizzas.map(x => (x.id === p.id ? p : x));
       }
       refrescar();
@@ -347,20 +361,14 @@
     } catch (e) { avisar("No se pudo deshacer: " + e.message); }
   }
 
-  /* Vender escribiendo (o escaneando) el código */
-  $("#form-vender").addEventListener("submit", e => {
-    e.preventDefault();
-    const inp = $("#codigo-vender");
-    const cod = inp.value.trim().toUpperCase().replace(/\s+/g, "");
-    if (!cod) { inp.focus(); return; }
-    const p = pizzas.find(x => x.codigo === cod);
-    if (!p) return avisar(`No existe el código ${cod}.`);
-    if (p.estado === "vendida") return avisar(`${cod} ya figura vendida el ${fechaAR(p.vendida_el?.slice(0, 10))}.`);
-    if (p.estado === "baja") return avisar(`${cod} está dada de baja.`);
-    inp.value = "";
-    cambiarEstado([p.id], "vendida");
-    inp.focus();
-  });
+  /* Cambiar a quién se vendió (desde Ventas) */
+  async function cambiarCliente(id, cliente) {
+    const [p] = await actualizarSeguro([id], { cliente: cliente || null });
+    if (columnasFaltantes.has("cliente")) throw new Error("falta el SQL «CLIENTE» en Supabase.");
+    pizzas = pizzas.map(x => (x.id === p.id ? p : x));
+    refrescar();
+    return p;
+  }
 
   $("#filas").addEventListener("click", e => {
     const tr = e.target.closest("tr");
@@ -370,7 +378,8 @@
     if (b) {
       if (b.dataset.fila === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => p.id === id));
       else if (b.dataset.fila === "eliminar") eliminar([id]);
-      else cambiarEstado([id], b.dataset.fila === "vender" ? "vendida" : b.dataset.fila);
+      else if (b.dataset.fila === "vender") window.VENTA.agregar([id]);
+      else cambiarEstado([id], b.dataset.fila);
       return;
     }
     if (e.target.matches("input[type=checkbox]") || e.target.closest(".col-codigo, .col-variedad")) {
@@ -390,7 +399,7 @@
     const a = b.dataset.accion;
     if (a === "limpiar") { elegidas.clear(); pintarTabla(); }
     else if (a === "imprimir") window.imprimirEtiquetas(pizzas.filter(p => elegidas.has(p.id)).sort((x, y) => x.codigo.localeCompare(y.codigo, "es", { numeric: true })));
-    else if (a === "vender") cambiarEstado(ids.filter(id => ["stock", "revision"].includes(pizzas.find(p => p.id === id).estado)), "vendida");
+    else if (a === "vender") { window.VENTA.agregar(ids); elegidas.clear(); pintarTabla(); }
     else if (a === "eliminar") eliminar(ids);
     else cambiarEstado(ids, a);
   });
@@ -423,19 +432,68 @@
   /* =========================================================
      NAVEGACIÓN, INGRESO, ARRANQUE
      ========================================================= */
+  const GESTION = ["prepizzas", "costos", "catalogo"];   // en pantallas chicas van dentro de «Más»
   function ir(vista) {
+    if (!document.getElementById(vista)?.classList.contains("vista")) vista = "inicio";
     $$(".vista").forEach(v => { v.hidden = v.id !== vista; });
-    $$(".pestana").forEach(p => (p.dataset.ir === vista ? p.setAttribute("aria-current", "page") : p.removeAttribute("aria-current")));
+    $$(".pestana[data-ir], .mas__item").forEach(p => (p.dataset.ir === vista ? p.setAttribute("aria-current", "page") : p.removeAttribute("aria-current")));
+    const mas = $(".pestana--mas");
+    if (GESTION.includes(vista)) mas.dataset.activa = ""; else delete mas.dataset.activa;
+    cerrarMas();
     try { sessionStorage.setItem("penitentia.vista", vista); } catch { /* nada */ }
     document.dispatchEvent(new CustomEvent("stock:vista", { detail: vista }));
     window.scrollTo({ top: 0 });
   }
   document.addEventListener("click", e => { const b = e.target.closest("[data-ir]"); if (b) ir(b.dataset.ir); });
 
-  function refrescar() { pintarStockVariedades(); pintarResumen(); pintarTabla(); }
+  /* Menú «Más» (Prepizzas, Costos, Catálogo) cuando no entran en la barra */
+  function cerrarMas() { $("#mas").hidden = true; $(".pestana--mas").setAttribute("aria-expanded", "false"); }
+  $(".pestana--mas").addEventListener("click", e => {
+    e.stopPropagation();
+    if (!$("#mas").hidden) return cerrarMas();
+    const r = e.currentTarget.getBoundingClientRect(), menu = $("#mas");
+    menu.hidden = false;
+    e.currentTarget.setAttribute("aria-expanded", "true");
+    if (window.innerWidth > 640) { menu.style.top = r.bottom + 8 + "px"; menu.style.left = Math.max(12, Math.min(r.left, window.innerWidth - menu.offsetWidth - 12)) + "px"; }
+    else { menu.style.top = ""; menu.style.left = ""; }
+    menu.querySelector("button").focus();
+  });
+  document.addEventListener("click", e => { if (!$("#mas").hidden && !e.target.closest("#mas")) cerrarMas(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#mas").hidden) { cerrarMas(); $(".pestana--mas").focus(); } });
+  window.addEventListener("resize", cerrarMas);
 
-  /* Lo que usa prepizzas.js */
-  window.STOCK = { avisar, hoyISO, fechaAR };
+  /* Ir al Stock con un filtro ya puesto (desde Inicio) */
+  function verStock({ estado = "stock", variedad = "", texto = "" } = {}) {
+    Object.assign(filtro, { estado, variedad, texto });
+    $("#buscar").value = texto; $("#filtro-variedad").value = variedad;
+    $$("#stock .segmentos button").forEach(x => x.setAttribute("aria-pressed", x.dataset.estado === estado));
+    elegidas.clear();
+    pintarResumen(); pintarTabla();
+    ir("stock");
+  }
+
+  function refrescar() {
+    pintarStockVariedades(); pintarResumen(); pintarTabla();
+    pintarClientes();
+    document.dispatchEvent(new Event("stock:datos"));
+  }
+
+  /* Sugerencias de clientes: los que ya compraron, los más frecuentes primero */
+  const clientesExtra = new Map();   // los de Prepizzas (los suma prepizzas.js)
+  function clientes() {
+    const n = new Map(clientesExtra);
+    for (const p of pizzas) if (p.cliente) n.set(p.cliente, (n.get(p.cliente) || 0) + 1);
+    return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es")).map(([c]) => c);
+  }
+  function pintarClientes() { $("#lista-clientes").innerHTML = clientes().map(c => `<option value="${esc(c)}"></option>`).join(""); }
+  function sumarClientes(lista) { clientesExtra.clear(); for (const c of lista) if (c) clientesExtra.set(c, (clientesExtra.get(c) || 0) + 1); pintarClientes(); }
+
+  /* Lo que usan los demás archivos (inicio.js, venta.js, ventas.js, prepizzas.js) */
+  window.STOCK = {
+    avisar, hoyISO, fechaAR, fechaLocal, diasHasta, pesos, esc, VAR, porId,
+    pizzas: () => pizzas, estadoDe, cambiarEstado, cambiarCliente, preciosPublicados, verStock, ir, clientes, sumarClientes,
+    faltan: () => [...columnasFaltantes],   // columnas nuevas que la base todavía no tiene (falta su SQL)
+  };
 
   async function abrirSistema(sesion) {
     $("#ingreso").hidden = true;
@@ -445,7 +503,7 @@
     try { [pizzas, eliminados] = await Promise.all([D.listar(), D.codigosEliminados()]); } catch (e) { avisar("No se pudieron leer las pizzas: " + e.message); }
     refrescar();
     document.dispatchEvent(new Event("stock:sesion"));
-    let vista = "producir";
+    let vista = "inicio";
     try { vista = sessionStorage.getItem("penitentia.vista") || vista; } catch { /* nada */ }
     ir(vista);
   }
